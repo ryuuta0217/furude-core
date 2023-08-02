@@ -1,0 +1,4 @@
+name: furude-core
+version: '${version}'
+main: com.ryuuta0217.furude.FurudeCore
+api-version: '1.20'

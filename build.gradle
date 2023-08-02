@@ -1,0 +1,47 @@
+plugins {
+    id 'java'
+    id 'io.papermc.paperweight.userdev' version '+'
+    id 'xyz.jpenilla.run-paper' version '+'
+    id 'com.github.johnrengelman.shadow' version '7.1.0'
+}
+
+group = 'com.ryuuta0217'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+    maven { url = "https://repo.papermc.io/repository/maven-public/" }
+    maven { url = "https://oss.sonatype.org/content/groups/public/" }
+}
+
+dependencies {
+    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.20.1-R0.1-SNAPSHOT")
+    implementation group: 'org.mozilla', name: 'rhino', version: '+'
+}
+
+processResources {
+    def props = [version: version]
+    inputs.properties props
+    filteringCharset 'UTF-8'
+    filesMatching('paper-plugin.yml') {
+        expand props
+    }
+}
+
+runServer {
+    jvmArgs("-Xmx768M")
+}
+
+tasks.build.dependsOn(reobfJar)
+
+jar {
+    archiveFileName = "original-" + archiveBaseName.get() + "." + archiveExtension.get()
+}
+
+shadowJar {
+    archiveFileName = archiveBaseName.get() + "-mojang." + archiveExtension.get()
+}
+
+reobfJar {
+    outputJar = layout.buildDirectory.file("libs/${project.name}.jar")
+}
