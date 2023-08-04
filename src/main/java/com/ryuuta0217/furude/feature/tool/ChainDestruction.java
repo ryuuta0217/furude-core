@@ -28,6 +28,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
@@ -88,6 +89,7 @@ public class ChainDestruction implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onClickBlock(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return; // Only works in main hand
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (event.getItem() == null) return;
         if (event.getClickedBlock() == null) return;
@@ -99,14 +101,19 @@ public class ChainDestruction implements Listener {
         Block block = state.getBlock();
 
         if (!selectedItem.getItem().isCorrectToolForDrops(state)) return;
+        if (!isEnabled(MinecraftAdapter.ItemStack.itemStack(selectedItem))) return; // Only if enabled
 
         if (isValidTargetCustom(MinecraftAdapter.ItemStack.itemStack(selectedItem), block) && !event.getPlayer().isSneaking()) {
             if (removeCustomTargetBlock(MinecraftAdapter.ItemStack.itemStack(selectedItem), block)) {
-                event.getPlayer().sendMessage(Component.text("一括破壊のカスタム対象から削除しました: " + BuiltInRegistries.BLOCK.getKey(block)));
+                event.getPlayer().sendMessage(Component.empty()
+                        .append(selectedItem.asBukkitMirror().displayName())
+                        .append(Component.text(" 一括破壊対象から削除しました: " + BuiltInRegistries.BLOCK.getKey(block))));
             }
         } else if (!isValidTargetDefault(block) && event.getPlayer().isSneaking()) {
             if (addCustomTargetBlock(MinecraftAdapter.ItemStack.itemStack(selectedItem), block)) {
-                event.getPlayer().sendMessage(Component.text("一括破壊のカスタム対象に追加しました: " + BuiltInRegistries.BLOCK.getKey(block)));
+                event.getPlayer().sendMessage(Component.empty()
+                        .append(selectedItem.asBukkitMirror().displayName())
+                        .append(Component.text(" 一括破壊対象に追加しました: " + BuiltInRegistries.BLOCK.getKey(block))));
             }
         }
     }
@@ -201,7 +208,7 @@ public class ChainDestruction implements Listener {
     private static List<String> getCustomTargetBlock(org.bukkit.inventory.ItemStack stack) {
         if (stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING)) {
             String raw = stack.getItemMeta().getPersistentDataContainer().get(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING);
-            return raw != null ? Arrays.asList(raw.split(", ?")) : Collections.emptyList();
+            return raw != null ? Arrays.stream(raw.split(", ?")).filter(str -> !str.isEmpty() && !str.isBlank()).toList() : Collections.emptyList();
         }
         return Collections.emptyList();
     }
