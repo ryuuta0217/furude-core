@@ -191,19 +191,19 @@ public class ChainDestruction implements Listener {
         return false;
     }
 
-    private static boolean isEnabled(org.bukkit.inventory.ItemStack stack) {
+    public static boolean isEnabled(org.bukkit.inventory.ItemStack stack) {
         if (stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_ENABLED_KEY)) {
             return Boolean.TRUE.equals(stack.getItemMeta().getPersistentDataContainer().get(CHAIN_DESTRUCTION_ENABLED_KEY, PersistentDataType.BOOLEAN));
         }
         return false;
     }
 
-    private static boolean setEnabled(org.bukkit.inventory.ItemStack stack, boolean enabled) {
+    public static boolean setEnabled(org.bukkit.inventory.ItemStack stack, boolean enabled) {
         stack.editMeta(meta -> meta.getPersistentDataContainer().set(CHAIN_DESTRUCTION_ENABLED_KEY, PersistentDataType.BOOLEAN, enabled));
         return enabled;
     }
 
-    private static List<String> getCustomTargetBlock(org.bukkit.inventory.ItemStack stack) {
+    public static List<String> getCustomTargetBlock(org.bukkit.inventory.ItemStack stack) {
         if (stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING)) {
             String raw = stack.getItemMeta().getPersistentDataContainer().get(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING);
             return raw != null ? Arrays.stream(raw.split(", ?")).filter(str -> !str.isEmpty() && !str.isBlank()).toList() : Collections.emptyList();
@@ -211,7 +211,7 @@ public class ChainDestruction implements Listener {
         return Collections.emptyList();
     }
 
-    private static boolean addCustomTargetBlock(org.bukkit.inventory.ItemStack stack, Block block) {
+    public static boolean addCustomTargetBlock(org.bukkit.inventory.ItemStack stack, Block block) {
         String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
         List<String> blocks = new ArrayList<>(getCustomTargetBlock(stack));
         if (blocks.contains(blockId)) return false; // Already Added
@@ -220,7 +220,7 @@ public class ChainDestruction implements Listener {
         return true;
     }
 
-    private static boolean removeCustomTargetBlock(org.bukkit.inventory.ItemStack stack, Block block) {
+    public static boolean removeCustomTargetBlock(org.bukkit.inventory.ItemStack stack, Block block) {
         String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
         List<String> blocks = new ArrayList<>(getCustomTargetBlock(stack));
         if (!blocks.contains(blockId)) return false; // Not Added
@@ -229,14 +229,14 @@ public class ChainDestruction implements Listener {
         return true;
     }
 
-    private static int getMaxBlocks(org.bukkit.inventory.ItemStack stack) {
+    public static int getMaxBlocks(org.bukkit.inventory.ItemStack stack) {
         if (stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_MAX_BLOCKS_KEY, PersistentDataType.INTEGER)) {
             return stack.getItemMeta().getPersistentDataContainer().get(CHAIN_DESTRUCTION_MAX_BLOCKS_KEY, PersistentDataType.INTEGER);
         }
         return MinecraftAdapter.ItemStack.itemStack(stack).getItem() instanceof PickaxeItem ? 64 : 256;
     }
 
-    private static void setMaxBlocks(org.bukkit.inventory.ItemStack stack, int maxBlocks) {
+    public static void setMaxBlocks(org.bukkit.inventory.ItemStack stack, int maxBlocks) {
         stack.editMeta(meta -> meta.getPersistentDataContainer().set(CHAIN_DESTRUCTION_MAX_BLOCKS_KEY, PersistentDataType.INTEGER, maxBlocks));
     }
 }
