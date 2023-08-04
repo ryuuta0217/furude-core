@@ -1,8 +1,8 @@
 package com.ryuuta0217.furude;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.ryuuta0217.furude.commands.EvaluateCommand;
 import com.ryuuta0217.furude.chat.KanaConvert;
+import com.ryuuta0217.furude.commands.EvaluateCommand;
 import com.ryuuta0217.furude.commands.HiraganaCommand;
 import com.ryuuta0217.furude.feature.death.DeathPointActionbar;
 import com.ryuuta0217.furude.feature.tool.ChainDestruction;
