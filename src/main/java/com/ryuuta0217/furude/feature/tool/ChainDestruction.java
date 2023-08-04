@@ -56,6 +56,7 @@ public class ChainDestruction implements Listener {
 
     private static final NamespacedKey CHAIN_DESTRUCTION_ENABLED_KEY = new NamespacedKey(FurudeCore.getInstance(), "cd_enabled");
     private static final NamespacedKey CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY = new NamespacedKey(FurudeCore.getInstance(), "cd_targets_additional");
+    private static final NamespacedKey CHAIN_DESTRUCTION_MAX_BLOCKS_KEY = new NamespacedKey(FurudeCore.getInstance(), "cd_max_blocks");
 
     private final Map<UUID, Set<BlockPos>> ignoreEventPositions = new HashMap<>();
 
@@ -135,7 +136,7 @@ public class ChainDestruction implements Listener {
         ItemStack selectedItem = player.getMainHandItem();
 
         boolean enabled = isEnabled(MinecraftAdapter.ItemStack.itemStack(selectedItem));
-        int maxBlocks = (selectedItem.getItem() instanceof PickaxeItem ? 64 : 256);
+        int maxBlocks = getMaxBlocks(MinecraftAdapter.ItemStack.itemStack(selectedItem));
 
         ServerLevel level = MinecraftAdapter.level(event.getBlock().getWorld());
         BlockState state = MinecraftAdapter.blockState(event.getBlock());
@@ -229,5 +230,16 @@ public class ChainDestruction implements Listener {
         blocks.remove(blockId);
         stack.editMeta(meta -> meta.getPersistentDataContainer().set(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING, String.join(",", blocks)));
         return true;
+    }
+
+    private static int getMaxBlocks(org.bukkit.inventory.ItemStack stack) {
+        if (stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_MAX_BLOCKS_KEY, PersistentDataType.INTEGER)) {
+            return stack.getItemMeta().getPersistentDataContainer().get(CHAIN_DESTRUCTION_MAX_BLOCKS_KEY, PersistentDataType.INTEGER);
+        }
+        return MinecraftAdapter.ItemStack.itemStack(stack).getItem() instanceof PickaxeItem ? 64 : 256;
+    }
+
+    private static void setMaxBlocks(org.bukkit.inventory.ItemStack stack, int maxBlocks) {
+        stack.editMeta(meta -> meta.getPersistentDataContainer().set(CHAIN_DESTRUCTION_MAX_BLOCKS_KEY, PersistentDataType.INTEGER, maxBlocks));
     }
 }
