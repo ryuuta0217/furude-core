@@ -35,13 +35,13 @@ runServer {
 tasks.build.dependsOn(reobfJar)
 
 jar {
-    archiveFileName = "original-" + archiveBaseName.get() + "." + archiveExtension.get()
+    archiveFileName = "original-" + archiveBaseName.get() + "-" + archiveVersion.get() + "." + archiveExtension.get()
 }
 
 shadowJar {
-    archiveFileName = archiveBaseName.get() + "-mojang." + archiveExtension.get()
+    archiveFileName = archiveBaseName.get() + "-" + archiveVersion.get() + "-mojang." + archiveExtension.get()
 }
 
 reobfJar {
-    outputJar = layout.buildDirectory.file("libs/${project.name}.jar")
+    outputJar = layout.buildDirectory.file("libs/${project.name}-${project.version}.jar")
 }
