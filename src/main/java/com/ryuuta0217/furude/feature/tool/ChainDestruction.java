@@ -6,11 +6,13 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.commands.TitleCommand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.level.block.Block;
@@ -30,14 +32,10 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ChainDestruction implements Listener {
-    public static final Set<Block> CHAIN_DESTRUCT_TARGETS = new HashSet<>() {{
-        add(Blocks.NETHER_QUARTZ_ORE);
-        add(Blocks.GLOWSTONE);
-    }};
-
-    public static final Set<TagKey<Block>> CHAIN_DESTRUCT_TARGET_TAGS = new HashSet<>() {{
+    private static final Set<TagKey<Block>> CHAIN_DESTRUCT_TARGET_TAGS = new HashSet<>() {{
         add(BlockTags.COAL_ORES);
         add(BlockTags.COPPER_ORES);
         add(BlockTags.IRON_ORES);
@@ -50,6 +48,21 @@ public class ChainDestruction implements Listener {
         add(BlockTags.LOGS);
         add(BlockTags.OVERWORLD_NATURAL_LOGS);
     }};
+
+    public static final Set<Block> DEFAULT_CHAIN_DESTRUCT_TARGETS = new HashSet<>() {{
+        add(Blocks.NETHER_QUARTZ_ORE);
+        add(Blocks.GLOWSTONE);
+
+        BuiltInRegistries.BLOCK.forEach(block -> {
+            if (CHAIN_DESTRUCT_TARGET_TAGS.stream().anyMatch(tag -> block.defaultBlockState().is(tag))) {
+                add(block);
+            }
+        });
+    }};
+
+    private static final Set<String> DEFAULT_CHAIN_DESTRUCT_TARGETS_STRING = DEFAULT_CHAIN_DESTRUCT_TARGETS.stream()
+            .map(block -> BuiltInRegistries.BLOCK.getKey(block).toString())
+            .collect(Collectors.toSet());
 
     private static final NamespacedKey CHAIN_DESTRUCTION_ENABLED_KEY = new NamespacedKey(FurudeCore.getInstance(), "cd_enabled");
     private static final NamespacedKey CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY = new NamespacedKey(FurudeCore.getInstance(), "cd_targets_additional");
@@ -66,7 +79,7 @@ public class ChainDestruction implements Listener {
         if (selectedBukkitItem == null) return;
 
         ItemStack selectedItem = MinecraftAdapter.ItemStack.itemStack(selectedBukkitItem);
-        if (selectedItem == null || (!(selectedItem.getItem() instanceof PickaxeItem) && !(selectedItem.getItem() instanceof AxeItem))) return;
+        if (selectedItem == null || (!(selectedItem.getItem() instanceof DiggerItem))) return;
 
         if (isEnabled(selectedBukkitItem)) {
             setEnabled(selectedBukkitItem, false);
@@ -93,7 +106,6 @@ public class ChainDestruction implements Listener {
         if (event.getClickedBlock() == null) return;
 
         ItemStack selectedItem = MinecraftAdapter.ItemStack.itemStack(event.getItem());
-        if (selectedItem == null || (!(selectedItem.getItem() instanceof PickaxeItem) && !(selectedItem.getItem() instanceof AxeItem))) return;
 
         BlockState state = MinecraftAdapter.blockState(event.getClickedBlock());
         Block block = state.getBlock();
@@ -101,14 +113,14 @@ public class ChainDestruction implements Listener {
         if (!selectedItem.getItem().isCorrectToolForDrops(state)) return;
         if (!isEnabled(MinecraftAdapter.ItemStack.itemStack(selectedItem))) return; // Only if enabled
 
-        if (isValidTargetCustom(MinecraftAdapter.ItemStack.itemStack(selectedItem), block) && !event.getPlayer().isSneaking()) {
-            if (removeCustomTargetBlock(MinecraftAdapter.ItemStack.itemStack(selectedItem), block)) {
+        if (isValidTarget(MinecraftAdapter.ItemStack.itemStack(selectedItem), block) && !event.getPlayer().isSneaking()) {
+            if (removeTargetBlock(MinecraftAdapter.ItemStack.itemStack(selectedItem), block)) {
                 event.getPlayer().sendMessage(Component.empty()
                         .append(selectedItem.asBukkitMirror().displayName())
                         .append(Component.text(" 一括破壊対象から削除しました: " + BuiltInRegistries.BLOCK.getKey(block))));
             }
-        } else if (!isValidTargetDefault(block) && event.getPlayer().isSneaking()) {
-            if (addCustomTargetBlock(MinecraftAdapter.ItemStack.itemStack(selectedItem), block)) {
+        } else if (event.getPlayer().isSneaking()) {
+            if (addTargetBlock(MinecraftAdapter.ItemStack.itemStack(selectedItem), block)) {
                 event.getPlayer().sendMessage(Component.empty()
                         .append(selectedItem.asBukkitMirror().displayName())
                         .append(Component.text(" 一括破壊対象に追加しました: " + BuiltInRegistries.BLOCK.getKey(block))));
@@ -157,6 +169,8 @@ public class ChainDestruction implements Listener {
                     } finally {
                         ignoreEventPositions.get(player.getUUID()).remove(pos);
                     }
+                } else {
+                    player.getBukkitEntity().sendActionBar(Component.text("耐久値がなくなりました", NamedTextColor.RED));
                 }
             }
         });
@@ -165,30 +179,8 @@ public class ChainDestruction implements Listener {
     }
 
     private static boolean isValidTarget(org.bukkit.inventory.ItemStack tool, Block targetBlock) {
-        return isValidTargetDefault(targetBlock) || isValidTargetCustom(tool, targetBlock);
-    }
-
-    private static boolean isValidTargetDefault(Block targetBlock) {
-        boolean blockMatch = CHAIN_DESTRUCT_TARGETS.contains(targetBlock);
-        boolean tagMatch = CHAIN_DESTRUCT_TARGET_TAGS.stream().anyMatch(tag -> targetBlock.builtInRegistryHolder().is(tag));
-        return blockMatch || tagMatch;
-    }
-
-    private static boolean isValidTargetCustom(org.bukkit.inventory.ItemStack tool, Block targetBlock) {
-        if (tool != null && tool.getItemMeta() != null && tool.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING)) {
-            String raw = tool.getItemMeta().getPersistentDataContainer().get(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING);
-            String[] ids = raw != null ? raw.split(", ?") : new String[0];
-            for (String idStr : ids) {
-                try {
-                    ResourceLocation id = ResourceLocation.tryParse(idStr);
-                    Block block = BuiltInRegistries.BLOCK.getOptional(id).orElse(null);
-                    if (block != null && block.equals(targetBlock)) {
-                        return true;
-                    }
-                } catch (Throwable ignored) {}
-            }
-        }
-        return false;
+        Set<String> targetBlocks = getTargetBlocks(tool);
+        return targetBlocks.contains(BuiltInRegistries.BLOCK.getKey(targetBlock).toString());
     }
 
     public static boolean isEnabled(org.bukkit.inventory.ItemStack stack) {
@@ -203,29 +195,35 @@ public class ChainDestruction implements Listener {
         return enabled;
     }
 
-    public static List<String> getCustomTargetBlock(org.bukkit.inventory.ItemStack stack) {
+    public static Set<String> getTargetBlocks(org.bukkit.inventory.ItemStack stack) {
         if (stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING)) {
             String raw = stack.getItemMeta().getPersistentDataContainer().get(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING);
-            return raw != null ? Arrays.stream(raw.split(", ?")).filter(str -> !str.isEmpty() && !str.isBlank()).toList() : Collections.emptyList();
+            return raw != null ? Arrays.stream(raw.split(", ?")).filter(str -> !str.isEmpty() && !str.isBlank()).collect(Collectors.toSet()) : Collections.emptySet();
         }
-        return Collections.emptyList();
+        return new HashSet<>(DEFAULT_CHAIN_DESTRUCT_TARGETS_STRING).stream()
+                .map(id -> new ResourceLocation(id))
+                .map(loc -> BuiltInRegistries.BLOCK.get(loc))
+                .map(block -> block.defaultBlockState())
+                .filter(state -> MinecraftAdapter.item(stack.getType()).isCorrectToolForDrops(state))
+                .map(state -> BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString())
+                .collect(Collectors.toUnmodifiableSet()); // Returns only blocks that can be broken by the tool by default.
     }
 
-    public static boolean addCustomTargetBlock(org.bukkit.inventory.ItemStack stack, Block block) {
+    public static boolean addTargetBlock(org.bukkit.inventory.ItemStack stack, Block block) {
         String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
-        List<String> blocks = new ArrayList<>(getCustomTargetBlock(stack));
-        if (blocks.contains(blockId)) return false; // Already Added
-        blocks.add(blockId);
-        stack.editMeta(meta -> meta.getPersistentDataContainer().set(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING, String.join(",", blocks)));
+        Set<String> targetBlocks = new HashSet<>(getTargetBlocks(stack));
+        if (targetBlocks.contains(blockId)) return false; // Already Added
+        targetBlocks.add(blockId);
+        stack.editMeta(meta -> meta.getPersistentDataContainer().set(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING, String.join(",", targetBlocks)));
         return true;
     }
 
-    public static boolean removeCustomTargetBlock(org.bukkit.inventory.ItemStack stack, Block block) {
+    public static boolean removeTargetBlock(org.bukkit.inventory.ItemStack stack, Block block) {
         String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
-        List<String> blocks = new ArrayList<>(getCustomTargetBlock(stack));
-        if (!blocks.contains(blockId)) return false; // Not Added
-        blocks.remove(blockId);
-        stack.editMeta(meta -> meta.getPersistentDataContainer().set(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING, String.join(",", blocks)));
+        Set<String> targetBlocks = new HashSet<>(getTargetBlocks(stack));
+        if (!targetBlocks.contains(blockId)) return false; // Not Added
+        targetBlocks.remove(blockId);
+        stack.editMeta(meta -> meta.getPersistentDataContainer().set(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING, String.join(",", targetBlocks)));
         return true;
     }
 
@@ -233,7 +231,7 @@ public class ChainDestruction implements Listener {
         if (stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_MAX_BLOCKS_KEY, PersistentDataType.INTEGER)) {
             return stack.getItemMeta().getPersistentDataContainer().get(CHAIN_DESTRUCTION_MAX_BLOCKS_KEY, PersistentDataType.INTEGER);
         }
-        return MinecraftAdapter.ItemStack.itemStack(stack).getItem() instanceof PickaxeItem ? 64 : 256;
+        return MinecraftAdapter.ItemStack.itemStack(stack).getItem() instanceof AxeItem ? 256 : 64;
     }
 
     public static void setMaxBlocks(org.bukkit.inventory.ItemStack stack, int maxBlocks) {
