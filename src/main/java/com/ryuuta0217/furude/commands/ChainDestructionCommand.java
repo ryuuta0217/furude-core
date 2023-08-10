@@ -62,6 +62,7 @@ public class ChainDestructionCommand {
         // /<chaindestroction|cd> modify targets remove <target: Item, suggestions: Registered-Items>
         // /<chaindestroction|cd> modify targets list
         LiteralArgumentBuilder<CommandSourceStack> builder = LiteralArgumentBuilder.literal("chaindestruction");
+        builder.requires(source -> source.hasPermission(0));
 
         builder.then(Commands.literal("enable")
                 .executes(ctx -> setChainDestructionStatus(ctx, true)))
@@ -108,6 +109,7 @@ public class ChainDestructionCommand {
         LiteralCommandNode<CommandSourceStack> rootNode = dispatcher.register(builder);
 
         LiteralArgumentBuilder<CommandSourceStack> aliasBuilder = LiteralArgumentBuilder.literal("cd");
+        aliasBuilder.requires(source -> source.hasPermission(0));
         aliasBuilder.redirect(rootNode);
         dispatcher.register(aliasBuilder);
     }

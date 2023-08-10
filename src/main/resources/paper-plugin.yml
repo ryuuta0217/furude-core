@@ -2,3 +2,10 @@ name: furude-core
 version: '${version}'
 main: com.ryuuta0217.furude.FurudeCore
 api-version: '1.20'
+permissions:
+  furude.default:
+    default: true
+    children:
+      - minecraft.command.hiragana
+      - minecraft.command.chaindestruction
+      - minecraft.command.cd
