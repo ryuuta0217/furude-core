@@ -55,7 +55,7 @@ public class ModeSwitcher implements Listener {
     }
 
     public static void setMode(org.bukkit.inventory.ItemStack stack, DiggerToolMode mode, @Nullable Player executor) {
-        if (stack == null || !stack.hasItemMeta()) return;
+        if (stack == null || stack.getItemMeta() == null) return;
         stack.editMeta(meta -> meta.getPersistentDataContainer().set(TOOL_MODE_KEY, PersistentDataType.STRING, mode.name()));
         if (executor != null) executor.sendActionBar(Component.empty().append(stack.displayName()).appendSpace().append(Component.text("モードを切り替えました: " + mode.getDisplayName(), NamedTextColor.GREEN)));
     }
