@@ -5,8 +5,11 @@ import com.ryuuta0217.furude.chat.KanaConvert;
 import com.ryuuta0217.furude.commands.ChainDestructionCommand;
 import com.ryuuta0217.furude.commands.EvaluateCommand;
 import com.ryuuta0217.furude.commands.HiraganaCommand;
+import com.ryuuta0217.furude.commands.RangedMiningCommand;
 import com.ryuuta0217.furude.feature.death.DeathPointActionbar;
 import com.ryuuta0217.furude.feature.tool.ChainDestruction;
+import com.ryuuta0217.furude.feature.tool.ModeSwitcher;
+import com.ryuuta0217.furude.feature.tool.RangedMining;
 import com.ryuuta0217.furude.managers.ListenerManager;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
@@ -35,6 +38,10 @@ public final class FurudeCore extends JavaPlugin {
         ChainDestructionCommand.register(getCommandDispatcher());
         getLogger().info("ふーでさば: 一括破壊用のコマンドを登録しました！");
 
+        getLogger().info("ふーでさば: 範囲破壊用のコマンドを登録中...");
+        RangedMiningCommand.register(getCommandDispatcher());
+        getLogger().info("ふーでさば: 範囲破壊用のコマンドを登録しました！");
+
         getLogger().info("ふーで鯖のプラグイン、よみこみかんりょう！ (" + ((System.nanoTime() - start) / 1000000) + "ミリ秒かかったよ)");
     }
 
@@ -51,9 +58,17 @@ public final class FurudeCore extends JavaPlugin {
         ListenerManager.registerListener(new DeathPointActionbar.Listener());
         getLogger().info("ふーでさば: 死亡地点表示用のアクションバーリスナーを登録しました！");
 
+        getLogger().info("ふーでさば: 破壊ツールモード切り替え用のリスナーを登録中...");
+        ListenerManager.registerListener(new ModeSwitcher());
+        getLogger().info("ふーでさば: 破壊ツールモード切り替え用のリスナーを登録しました！");
+
         getLogger().info("ふーでさば: 一括破壊用のブロック破壊リスナーを登録中...");
         ListenerManager.registerListener(new ChainDestruction());
         getLogger().info("ふーでさば: 一括破壊用のブロック破壊リスナーを登録しました！");
+
+        getLogger().info("ふーでさば: 範囲破壊用のブロック破壊リスナーを登録中...");
+        ListenerManager.registerListener(new RangedMining());
+        getLogger().info("ふーでさば: 範囲破壊用のブロック破壊リスナーを登録しました！");
 
         getLogger().info("ふーで鯖のプラグイン、有効化かんりょう！ (" + ((System.nanoTime() - start) / 1000000) + "ミリ秒かかったよ)");
     }
