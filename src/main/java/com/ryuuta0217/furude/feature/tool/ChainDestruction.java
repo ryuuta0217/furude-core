@@ -64,39 +64,10 @@ public class ChainDestruction implements Listener {
             .map(block -> BuiltInRegistries.BLOCK.getKey(block).toString())
             .collect(Collectors.toSet());
 
-    private static final NamespacedKey CHAIN_DESTRUCTION_ENABLED_KEY = new NamespacedKey(FurudeCore.getInstance(), "cd_enabled");
     private static final NamespacedKey CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY = new NamespacedKey(FurudeCore.getInstance(), "cd_targets_additional");
     private static final NamespacedKey CHAIN_DESTRUCTION_MAX_BLOCKS_KEY = new NamespacedKey(FurudeCore.getInstance(), "cd_max_blocks");
 
     private final Map<UUID, Set<BlockPos>> ignoreEventPositions = new HashMap<>();
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onHeldChanged(PlayerItemHeldEvent event) {
-        boolean isWheel = event.getNewSlot() == event.getPreviousSlot() + 1 || event.getNewSlot() == event.getPreviousSlot() - 1 || (event.getNewSlot() == 0 && event.getPreviousSlot() == 8);
-        if (!isWheel || !event.getPlayer().isSneaking()) return;
-
-        org.bukkit.inventory.ItemStack selectedBukkitItem = event.getPlayer().getInventory().getItem(event.getPreviousSlot());
-        if (selectedBukkitItem == null) return;
-
-        ItemStack selectedItem = MinecraftAdapter.ItemStack.itemStack(selectedBukkitItem);
-        if (selectedItem == null || (!(selectedItem.getItem() instanceof DiggerItem))) return;
-
-        if (isEnabled(selectedBukkitItem)) {
-            setEnabled(selectedBukkitItem, false);
-            event.getPlayer().sendActionBar(Component.empty()
-                    .append(selectedBukkitItem.displayName())
-                    .appendSpace()
-                    .append(Component.text("一括破壊を無効化しました", NamedTextColor.RED)));
-            event.setCancelled(true);
-        } else {
-            setEnabled(selectedBukkitItem, true);
-            event.getPlayer().sendActionBar(Component.empty()
-                    .append(selectedBukkitItem.displayName())
-                    .appendSpace()
-                    .append(Component.text("一括破壊を有効化しました", NamedTextColor.GREEN)));
-            event.setCancelled(true);
-        }
-    }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onClickBlock(PlayerInteractEvent event) {
@@ -111,19 +82,21 @@ public class ChainDestruction implements Listener {
         Block block = state.getBlock();
 
         if (!selectedItem.getItem().isCorrectToolForDrops(state)) return;
-        if (!isEnabled(MinecraftAdapter.ItemStack.itemStack(selectedItem))) return; // Only if enabled
+        if (ModeSwitcher.getMode(selectedItem) != DiggerToolMode.CHAIN_DESTRUCTION) return; // Only if enabled
 
         if (isValidTarget(MinecraftAdapter.ItemStack.itemStack(selectedItem), block) && !event.getPlayer().isSneaking()) {
             if (removeTargetBlock(MinecraftAdapter.ItemStack.itemStack(selectedItem), block)) {
                 event.getPlayer().sendMessage(Component.empty()
                         .append(selectedItem.asBukkitMirror().displayName())
                         .append(Component.text(" 一括破壊対象から削除しました: " + BuiltInRegistries.BLOCK.getKey(block))));
+                event.setCancelled(true);
             }
         } else if (event.getPlayer().isSneaking()) {
             if (addTargetBlock(MinecraftAdapter.ItemStack.itemStack(selectedItem), block)) {
                 event.getPlayer().sendMessage(Component.empty()
                         .append(selectedItem.asBukkitMirror().displayName())
                         .append(Component.text(" 一括破壊対象に追加しました: " + BuiltInRegistries.BLOCK.getKey(block))));
+                event.setCancelled(true);
             }
         }
     }
@@ -144,7 +117,7 @@ public class ChainDestruction implements Listener {
 
         ItemStack selectedItem = player.getMainHandItem();
 
-        boolean enabled = isEnabled(MinecraftAdapter.ItemStack.itemStack(selectedItem));
+        boolean enabled = ModeSwitcher.getMode(selectedItem) == DiggerToolMode.CHAIN_DESTRUCTION;
         int maxBlocks = getMaxBlocks(MinecraftAdapter.ItemStack.itemStack(selectedItem));
 
         ServerLevel level = MinecraftAdapter.level(event.getBlock().getWorld());
@@ -181,18 +154,6 @@ public class ChainDestruction implements Listener {
     private static boolean isValidTarget(org.bukkit.inventory.ItemStack tool, Block targetBlock) {
         Set<String> targetBlocks = getTargetBlocks(tool);
         return targetBlocks.contains(BuiltInRegistries.BLOCK.getKey(targetBlock).toString());
-    }
-
-    public static boolean isEnabled(org.bukkit.inventory.ItemStack stack) {
-        if (stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_ENABLED_KEY)) {
-            return Boolean.TRUE.equals(stack.getItemMeta().getPersistentDataContainer().get(CHAIN_DESTRUCTION_ENABLED_KEY, PersistentDataType.BOOLEAN));
-        }
-        return false;
-    }
-
-    public static boolean setEnabled(org.bukkit.inventory.ItemStack stack, boolean enabled) {
-        stack.editMeta(meta -> meta.getPersistentDataContainer().set(CHAIN_DESTRUCTION_ENABLED_KEY, PersistentDataType.BOOLEAN, enabled));
-        return enabled;
     }
 
     public static Set<String> getTargetBlocks(org.bukkit.inventory.ItemStack stack) {
