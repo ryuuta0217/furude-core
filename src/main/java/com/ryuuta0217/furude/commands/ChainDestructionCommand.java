@@ -8,6 +8,8 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.ryuuta0217.furude.FurudeCore;
 import com.ryuuta0217.furude.feature.tool.ChainDestruction;
+import com.ryuuta0217.furude.feature.tool.DiggerToolMode;
+import com.ryuuta0217.furude.feature.tool.ModeSwitcher;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
@@ -22,6 +24,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ReloadableServerResources;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.unknown.core.util.MinecraftAdapter;
@@ -67,6 +70,7 @@ public class ChainDestructionCommand {
                         .executes(ctx -> setChainDestructionStatus(ctx, false)))
                 .then(Commands.literal("modify")
                         .then(Commands.literal("max-blocks")
+                                .executes(ctx -> showMaxBlocks(ctx))
                                 .then(Commands.argument("maxBlocks", IntegerArgumentType.integer(1))
                                         .executes(ctx -> modifyMaxBlocks(ctx, IntegerArgumentType.getInteger(ctx, "maxBlocks"))))))
                 .then(Commands.literal("targets")
@@ -115,7 +119,12 @@ public class ChainDestructionCommand {
         ItemStack mainHandItem = ctx.getSource().getPlayerOrException().getMainHandItem();
         org.bukkit.inventory.ItemStack mainHandItemBukkit = MinecraftAdapter.ItemStack.itemStack(mainHandItem);
 
-        if ((enabled && ChainDestruction.isEnabled(mainHandItemBukkit)) || (!enabled && !ChainDestruction.isEnabled(mainHandItemBukkit))) {
+        if (!isValidTool(mainHandItem)) {
+            ctx.getSource().sendFailure(Component.literal("現在手に持っているアイテムでは、一括破壊を行えません"), true);
+            return 2;
+        }
+
+        if ((enabled && ModeSwitcher.getMode(mainHandItem) == DiggerToolMode.CHAIN_DESTRUCTION) || (!enabled && ModeSwitcher.getMode(mainHandItem) == DiggerToolMode.OFF)) {
             ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                     .append(net.kyori.adventure.text.Component.text("既に"))
                     .append(net.kyori.adventure.text.Component.text((enabled ? "有効" : "無効") + "化", enabled ? NamedTextColor.GREEN : NamedTextColor.RED))
@@ -123,7 +132,7 @@ public class ChainDestructionCommand {
             return 1;
         }
 
-        ChainDestruction.setEnabled(mainHandItemBukkit, enabled);
+        ModeSwitcher.setMode(mainHandItem, enabled ? DiggerToolMode.CHAIN_DESTRUCTION : DiggerToolMode.OFF, null);
         ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                 .append(net.kyori.adventure.text.Component.text("一括破壊を"))
                 .appendSpace()
@@ -133,9 +142,27 @@ public class ChainDestructionCommand {
         return 0;
     }
 
+    private static int showMaxBlocks(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ItemStack mainHandItem = ctx.getSource().getPlayerOrException().getMainHandItem();
+        org.bukkit.inventory.ItemStack mainHandItemBukkit = MinecraftAdapter.ItemStack.itemStack(mainHandItem);
+
+        if (!isValidTool(mainHandItem)) {
+            ctx.getSource().sendFailure(Component.literal("現在手に持っているアイテムでは、一括破壊を行えません"), true);
+            return 2;
+        }
+
+        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数は " + ChainDestruction.getMaxBlocks(mainHandItemBukkit) + "ブロック に設定されています")))), true);
+        return 0;
+    }
+
     private static int modifyMaxBlocks(CommandContext<CommandSourceStack> ctx, int maxBlocks) throws CommandSyntaxException {
         ItemStack mainHandItem = ctx.getSource().getPlayerOrException().getMainHandItem();
         org.bukkit.inventory.ItemStack mainHandItemBukkit = MinecraftAdapter.ItemStack.itemStack(mainHandItem);
+
+        if (!isValidTool(mainHandItem)) {
+            ctx.getSource().sendFailure(Component.literal("現在手に持っているアイテムでは、一括破壊を行えません"), true);
+            return 2;
+        }
 
         if (ChainDestruction.getMaxBlocks(mainHandItemBukkit) == maxBlocks) {
             ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数は既に " + maxBlocks + "ブロック に設定されています")))), true);
@@ -155,6 +182,11 @@ public class ChainDestructionCommand {
 
         ItemStack mainHandItem = ctx.getSource().getPlayerOrException().getMainHandItem();
         org.bukkit.inventory.ItemStack mainHandItemBukkit = MinecraftAdapter.ItemStack.itemStack(mainHandItem);
+
+        if (!isValidTool(mainHandItem)) {
+            ctx.getSource().sendFailure(Component.literal("現在手に持っているアイテムでは、一括破壊を行えません"), true);
+            return 2;
+        }
 
         Set<String> chainDestructTargets = ChainDestruction.getTargetBlocks(mainHandItemBukkit);
         String blockItemKey = BuiltInRegistries.BLOCK.getKey(blockItem.getBlock()).toString();
@@ -187,6 +219,11 @@ public class ChainDestructionCommand {
         ItemStack mainHandItem = ctx.getSource().getPlayerOrException().getMainHandItem();
         org.bukkit.inventory.ItemStack mainHandItemBukkit = MinecraftAdapter.ItemStack.itemStack(mainHandItem);
 
+        if (!isValidTool(mainHandItem)) {
+            ctx.getSource().sendFailure(Component.literal("現在手に持っているアイテムでは、一括破壊を行えません"), true);
+            return 2;
+        }
+
         Set<String> chainDestructTargets = ChainDestruction.getTargetBlocks(mainHandItemBukkit);
         String blockItemKey = BuiltInRegistries.BLOCK.getKey(blockItem.getBlock()).toString();
 
@@ -213,6 +250,11 @@ public class ChainDestructionCommand {
         ItemStack mainHandItem = ctx.getSource().getPlayerOrException().getMainHandItem();
         org.bukkit.inventory.ItemStack mainHandItemBukkit = MinecraftAdapter.ItemStack.itemStack(mainHandItem);
 
+        if (!isValidTool(mainHandItem)) {
+            ctx.getSource().sendFailure(Component.literal("現在手に持っているアイテムでは、一括破壊を行えません"), true);
+            return 2;
+        }
+
         Set<String> chainDestructTargets = ChainDestruction.getTargetBlocks(mainHandItemBukkit);
         if (chainDestructTargets.isEmpty()) {
             ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊対象が登録されていません (おかしい)", NamedTextColor.RED)))), true);
@@ -235,6 +277,10 @@ public class ChainDestructionCommand {
         net.kyori.adventure.text.Component finalMessage = message;
         ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(finalMessage)), false);
         return 0;
+    }
+
+    private static boolean isValidTool(ItemStack stack) {
+        return stack.getItem() instanceof DiggerItem;
     }
 
     private static net.kyori.adventure.text.Component buildDisplayName(org.bukkit.inventory.ItemStack stack, @Nullable Style style) {
