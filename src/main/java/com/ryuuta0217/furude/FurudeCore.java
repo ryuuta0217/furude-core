@@ -6,6 +6,7 @@ import com.ryuuta0217.furude.commands.ChainDestructionCommand;
 import com.ryuuta0217.furude.commands.EvaluateCommand;
 import com.ryuuta0217.furude.commands.HiraganaCommand;
 import com.ryuuta0217.furude.commands.RangedMiningCommand;
+import com.ryuuta0217.furude.feature.SuppressMusicDiscStopsAfterDefinedTimeLimit;
 import com.ryuuta0217.furude.feature.death.DeathPointActionbar;
 import com.ryuuta0217.furude.feature.tool.ChainDestruction;
 import com.ryuuta0217.furude.feature.tool.ModeSwitcher;
@@ -69,6 +70,10 @@ public final class FurudeCore extends JavaPlugin {
         getLogger().info("ふーでさば: 範囲破壊用のブロック破壊リスナーを登録中...");
         ListenerManager.registerListener(new RangedMining());
         getLogger().info("ふーでさば: 範囲破壊用のブロック破壊リスナーを登録しました！");
+
+        getLogger().info("ふーでさば: 音楽ディスクの再生時間制限を無視するするリスナーを登録中...");
+        ListenerManager.registerListener(new SuppressMusicDiscStopsAfterDefinedTimeLimit());
+        getLogger().info("ふーでさば: 音楽ディスクの再生時間制限を無視するするリスナーを登録しました！");
 
         getLogger().info("ふーで鯖のプラグイン、有効化かんりょう！ (" + ((System.nanoTime() - start) / 1000000) + "ミリ秒かかったよ)");
     }
