@@ -3,6 +3,7 @@ package com.ryuuta0217.furude;
 import com.mojang.brigadier.CommandDispatcher;
 import com.ryuuta0217.furude.chat.KanaConvert;
 import com.ryuuta0217.furude.commands.*;
+import com.ryuuta0217.furude.feature.SharpCommandListener;
 import com.ryuuta0217.furude.feature.SuppressMusicDiscStopsAfterDefinedTimeLimit;
 import com.ryuuta0217.furude.feature.death.DeathPointActionbar;
 import com.ryuuta0217.furude.feature.tool.ChainDestruction;
@@ -75,6 +76,10 @@ public final class FurudeCore extends JavaPlugin {
         getLogger().info("ふーでさば: 音楽ディスクの再生時間制限を無視するするリスナーを登録中...");
         ListenerManager.registerListener(new SuppressMusicDiscStopsAfterDefinedTimeLimit());
         getLogger().info("ふーでさば: 音楽ディスクの再生時間制限を無視するするリスナーを登録しました！");
+        
+        getLogger().info("ふーでさば: 統合版向けにシャープでコマンドを実行可能にするチャットリスナーを登録中...");
+        ListenerManager.registerListener(new SharpCommandListener());
+        getLogger().info("ふーでさば: 統合版向けにシャープでコマンドを実行可能にするチャットリスナーを登録しました！");
 
         getLogger().info("ふーで鯖のプラグイン、有効化かんりょう！ (" + ((System.nanoTime() - start) / 1000000) + "ミリ秒かかったよ)");
     }
