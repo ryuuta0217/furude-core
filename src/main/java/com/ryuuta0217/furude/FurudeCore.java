@@ -2,10 +2,7 @@ package com.ryuuta0217.furude;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.ryuuta0217.furude.chat.KanaConvert;
-import com.ryuuta0217.furude.commands.ChainDestructionCommand;
-import com.ryuuta0217.furude.commands.EvaluateCommand;
-import com.ryuuta0217.furude.commands.HiraganaCommand;
-import com.ryuuta0217.furude.commands.RangedMiningCommand;
+import com.ryuuta0217.furude.commands.*;
 import com.ryuuta0217.furude.feature.SuppressMusicDiscStopsAfterDefinedTimeLimit;
 import com.ryuuta0217.furude.feature.death.DeathPointActionbar;
 import com.ryuuta0217.furude.feature.tool.ChainDestruction;
@@ -42,6 +39,10 @@ public final class FurudeCore extends JavaPlugin {
         getLogger().info("ふーでさば: 範囲破壊用のコマンドを登録中...");
         RangedMiningCommand.register(getCommandDispatcher());
         getLogger().info("ふーでさば: 範囲破壊用のコマンドを登録しました！");
+
+        getLogger().info("ふーでさば: アイテムを頭に被るコマンドを登録中...");
+        HatCommand.register(getCommandDispatcher());
+        getLogger().info("ふーでさば: アイテムを頭に被るコマンドを登録しました！");
 
         getLogger().info("ふーで鯖のプラグイン、よみこみかんりょう！ (" + ((System.nanoTime() - start) / 1000000) + "ミリ秒かかったよ)");
     }
