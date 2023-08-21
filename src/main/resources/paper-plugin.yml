@@ -9,3 +9,6 @@ permissions:
       - minecraft.command.hiragana
       - minecraft.command.chaindestruction
       - minecraft.command.cd
+      - minecraft.command.rangedmining
+      - minecraft.command.rm
+      - minecraft.command.hat

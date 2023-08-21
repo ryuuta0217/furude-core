@@ -12,6 +12,8 @@ import com.ryuuta0217.furude.feature.tool.RangedMining;
 import com.ryuuta0217.furude.managers.ListenerManager;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.ComposterBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -45,6 +47,12 @@ public final class FurudeCore extends JavaPlugin {
         HatCommand.register(getCommandDispatcher());
         getLogger().info("ふーでさば: アイテムを頭に被るコマンドを登録しました！");
 
+        if (!ComposterBlock.COMPOSTABLES.containsKey(Items.ROTTEN_FLESH)) {
+            getLogger().info("ふーでさば: 腐肉をコンポスターで処分可能にしています...");
+            ComposterBlock.COMPOSTABLES.put(Items.ROTTEN_FLESH, 0.5F);
+            getLogger().info("ふーでさば: 腐肉をコンポスターで処分可能にしました！");
+        }
+
         getLogger().info("ふーで鯖のプラグイン、よみこみかんりょう！ (" + ((System.nanoTime() - start) / 1000000) + "ミリ秒かかったよ)");
     }
 
@@ -76,7 +84,7 @@ public final class FurudeCore extends JavaPlugin {
         getLogger().info("ふーでさば: 音楽ディスクの再生時間制限を無視するするリスナーを登録中...");
         ListenerManager.registerListener(new SuppressMusicDiscStopsAfterDefinedTimeLimit());
         getLogger().info("ふーでさば: 音楽ディスクの再生時間制限を無視するするリスナーを登録しました！");
-        
+
         getLogger().info("ふーでさば: 統合版向けにシャープでコマンドを実行可能にするチャットリスナーを登録中...");
         ListenerManager.registerListener(new SharpCommandListener());
         getLogger().info("ふーでさば: 統合版向けにシャープでコマンドを実行可能にするチャットリスナーを登録しました！");

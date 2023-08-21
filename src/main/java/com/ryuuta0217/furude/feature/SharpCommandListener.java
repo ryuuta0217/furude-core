@@ -6,6 +6,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
+/**
+ * Xbox Achievements を有効化した環境下では、/から始まるコマンドは実行できないため、代わりに#から始まる文字列を/に置き換えて実行します。
+ */
 public class SharpCommandListener implements Listener {
     @EventHandler
     public void onChat(AsyncChatEvent event) {
