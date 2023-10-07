@@ -1,5 +1,5 @@
 # furude-core
-古手鯖の専用プラグインです。Paper 1.20.1 用にデザインされています。
+古手鯖の専用プラグインです。Paper 1.20.2 用にデザインされています。
 
 一部のソース・コードは、[Unknown Network](https://mc-unknown.net/) が著作権を保有しています。
 
