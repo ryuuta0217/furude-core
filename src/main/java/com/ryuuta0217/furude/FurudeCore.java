@@ -47,6 +47,10 @@ public final class FurudeCore extends JavaPlugin {
         HatCommand.register(getCommandDispatcher());
         getLogger().info("ふーでさば: アイテムを頭に被るコマンドを登録しました！");
 
+        getLogger().info("ふーでさば: サーバー移動コマンドを登録中...");
+        ServerCommand.register(getCommandDispatcher());
+        getLogger().info("ふーでさば: サーバー移動コマンドを登録しました！");
+
         if (!ComposterBlock.COMPOSTABLES.containsKey(Items.ROTTEN_FLESH)) {
             getLogger().info("ふーでさば: 腐肉をコンポスターで処分可能にしています...");
             ComposterBlock.COMPOSTABLES.put(Items.ROTTEN_FLESH, 0.5F);
@@ -88,6 +92,10 @@ public final class FurudeCore extends JavaPlugin {
         getLogger().info("ふーでさば: 統合版向けにシャープでコマンドを実行可能にするチャットリスナーを登録中...");
         ListenerManager.registerListener(new SharpCommandListener());
         getLogger().info("ふーでさば: 統合版向けにシャープでコマンドを実行可能にするチャットリスナーを登録しました！");
+
+        getLogger().info("ふーでさば: BungeeCordのプラグインチャンネルを登録中...");
+        Bukkit.getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+        getLogger().info("ふーでさば: BungeeCordのプラグインチャンネルを登録しました！");
 
         getLogger().info("ふーで鯖のプラグイン、有効化かんりょう！ (" + ((System.nanoTime() - start) / 1000000) + "ミリ秒かかったよ)");
     }
