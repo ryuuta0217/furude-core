@@ -6,7 +6,6 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-import com.ryuuta0217.furude.FurudeCore;
 import com.ryuuta0217.furude.feature.tool.ChainDestruction;
 import com.ryuuta0217.furude.feature.tool.DiggerToolMode;
 import com.ryuuta0217.furude.feature.tool.ModeSwitcher;
@@ -22,7 +21,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.ReloadableServerResources;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.Item;
@@ -30,30 +28,12 @@ import net.minecraft.world.item.ItemStack;
 import net.unknown.core.util.MinecraftAdapter;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 
 public class ChainDestructionCommand {
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        CommandBuildContext buildContext = null;
-        try {
-            Field commandBuildContextField = ReloadableServerResources.class.getDeclaredField("c");
-            if (commandBuildContextField.trySetAccessible()) {
-                buildContext = (CommandBuildContext) commandBuildContextField.get(MinecraftServer.getServer().resources.managers());
-            } else {
-                FurudeCore.getInstance().getLogger().warning("一括破壊用コマンド /chaindestruction の登録でエラーが起きました。Fieldが見つかりません。");
-            }
-        } catch(NoSuchFieldException | IllegalAccessException e) {
-            FurudeCore.getInstance().getLogger().warning("一括破壊用コマンド /chaindestruction の登録でエラーが起きました: " + e.getMessage());
-        }
-
-        if (buildContext == null) {
-            FurudeCore.getInstance().getLogger().warning("一括破壊用コマンド /chaindestruction の登録でエラーが起きました。CommandBuildContextが取得できていないため、コマンドは登録されません");
-            return;
-        }
-
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext buildContext) {
         // /<chaindestroction|cd> <enable|disable|modify>
         // /<chaindestroction|cd> modify max-blocks [int: maxBlocks]
         // /<chaindestroction|cd> modify targets <add|remove|list>
@@ -98,7 +78,7 @@ public class ChainDestructionCommand {
                                             String input = suggestionsBuilder.getInput().substring(suggestionsBuilder.getStart());
                                             ChainDestruction.getTargetBlocks(MinecraftAdapter.ItemStack.itemStack(ctx.getSource().getPlayerOrException().getMainHandItem())).forEach(id -> {
                                                 if (!input.isEmpty() && !input.isBlank() && !id.contains(input)) return;
-                                                Optional<Item> itemOpt = BuiltInRegistries.ITEM.getOptional(new ResourceLocation(id));
+                                                Optional<Item> itemOpt = BuiltInRegistries.ITEM.getOptional(ResourceLocation.tryParse(id));
                                                 itemOpt.ifPresent(item -> suggestionsBuilder.suggest(id, new ItemStack(item).getDisplayName()));
                                             });
                                             return suggestionsBuilder.buildFuture();
@@ -128,7 +108,7 @@ public class ChainDestructionCommand {
             ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                     .append(net.kyori.adventure.text.Component.text("既に"))
                     .append(net.kyori.adventure.text.Component.text((enabled ? "有効" : "無効") + "化", enabled ? NamedTextColor.GREEN : NamedTextColor.RED))
-                    .append(net.kyori.adventure.text.Component.text("されています"))))), true);
+                    .append(net.kyori.adventure.text.Component.text("されています")))), MinecraftServer.getDefaultRegistryAccess()), true);
             return 1;
         }
 
@@ -138,7 +118,7 @@ public class ChainDestructionCommand {
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text((enabled ? "有効" : "無効"), enabled ? NamedTextColor.GREEN : NamedTextColor.RED))
                 .appendSpace()
-                .append(net.kyori.adventure.text.Component.text("化しました"))))), true);
+                .append(net.kyori.adventure.text.Component.text("化しました")))), MinecraftServer.getDefaultRegistryAccess()), true);
         return 0;
     }
 
@@ -151,7 +131,7 @@ public class ChainDestructionCommand {
             return 2;
         }
 
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数は " + ChainDestruction.getMaxBlocks(mainHandItemBukkit) + "ブロック に設定されています")))), true);
+        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数は " + ChainDestruction.getMaxBlocks(mainHandItemBukkit) + "ブロック に設定されています"))), MinecraftServer.getDefaultRegistryAccess()), true);
         return 0;
     }
 
@@ -165,12 +145,12 @@ public class ChainDestructionCommand {
         }
 
         if (ChainDestruction.getMaxBlocks(mainHandItemBukkit) == maxBlocks) {
-            ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数は既に " + maxBlocks + "ブロック に設定されています")))), true);
+            ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数は既に " + maxBlocks + "ブロック に設定されています"))), MinecraftServer.getDefaultRegistryAccess()), true);
             return 1;
         }
 
         ChainDestruction.setMaxBlocks(mainHandItemBukkit, maxBlocks);
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数を " + maxBlocks + "ブロック に設定しました")))), true);
+        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数を " + maxBlocks + "ブロック に設定しました"))), MinecraftServer.getDefaultRegistryAccess()), true);
         return 0;
     }
 
@@ -195,7 +175,7 @@ public class ChainDestructionCommand {
             ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                     .append(net.kyori.adventure.text.Component.text("既に一括破壊対象に設定されています:"))
                     .appendSpace()
-                    .append(buildDisplayName(MinecraftAdapter.ItemStack.itemStack(new ItemStack(target)), NamedTextColor.RED))))), true);
+                    .append(buildDisplayName(MinecraftAdapter.ItemStack.itemStack(new ItemStack(target)), NamedTextColor.RED)))), MinecraftServer.getDefaultRegistryAccess()), true);
             return 1;
         }
 
@@ -206,7 +186,7 @@ public class ChainDestructionCommand {
         ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                 .append(net.kyori.adventure.text.Component.text("一括破壊対象を追加しました:"))
                 .appendSpace()
-                .append(buildDisplayName(itemBukkit, NamedTextColor.GREEN))))), true);
+                .append(buildDisplayName(itemBukkit, NamedTextColor.GREEN)))), MinecraftServer.getDefaultRegistryAccess()), true);
         return 0;
     }
 
@@ -231,7 +211,7 @@ public class ChainDestructionCommand {
             ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                     .append(net.kyori.adventure.text.Component.text("一括破壊の対象ではありません:"))
                     .appendSpace()
-                    .append(buildDisplayName(MinecraftAdapter.ItemStack.itemStack(new ItemStack(target)), NamedTextColor.RED))))), true);
+                    .append(buildDisplayName(MinecraftAdapter.ItemStack.itemStack(new ItemStack(target)), NamedTextColor.RED)))), MinecraftServer.getDefaultRegistryAccess()), true);
             return 1;
         }
 
@@ -242,7 +222,7 @@ public class ChainDestructionCommand {
         ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                 .append(net.kyori.adventure.text.Component.text("一括破壊の対象から削除しました:", NamedTextColor.YELLOW))
                 .appendSpace()
-                .append(buildDisplayName(itemBukkit, NamedTextColor.YELLOW))))), true);
+                .append(buildDisplayName(itemBukkit, NamedTextColor.YELLOW)))), MinecraftServer.getDefaultRegistryAccess()), true);
         return 0;
     }
 
@@ -257,7 +237,7 @@ public class ChainDestructionCommand {
 
         Set<String> chainDestructTargets = ChainDestruction.getTargetBlocks(mainHandItemBukkit);
         if (chainDestructTargets.isEmpty()) {
-            ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊対象が登録されていません (おかしい)", NamedTextColor.RED)))), true);
+            ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊対象が登録されていません (おかしい)", NamedTextColor.RED))), MinecraftServer.getDefaultRegistryAccess()), true);
             return 1;
         }
 
@@ -267,7 +247,7 @@ public class ChainDestructionCommand {
         NamedTextColor[] useColors = new NamedTextColor[] { NamedTextColor.GREEN, NamedTextColor.YELLOW, NamedTextColor.LIGHT_PURPLE };
         NamedTextColor nextColor = useColors[0];
         for (String target : chainDestructTargets) {
-            ItemStack item = new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(target)));
+            ItemStack item = new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.tryParse(target)));
             org.bukkit.inventory.ItemStack itemBukkit = MinecraftAdapter.ItemStack.itemStack(item);
             message = message.append(itemBukkit.displayName().style(Style.style(nextColor)).hoverEvent(itemBukkit.asHoverEvent()))
                     .appendSpace();
@@ -275,7 +255,7 @@ public class ChainDestructionCommand {
         }
 
         net.kyori.adventure.text.Component finalMessage = message;
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(finalMessage)), false);
+        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(finalMessage), MinecraftServer.getDefaultRegistryAccess()), false);
         return 0;
     }
 
@@ -309,10 +289,10 @@ public class ChainDestructionCommand {
     }
 
     private static Component convertAdventure2Minecraft(net.kyori.adventure.text.Component component) {
-        return Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(component));
+        return Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(component), MinecraftServer.getDefaultRegistryAccess());
     }
 
     private static net.kyori.adventure.text.Component convertMinecraft2Adventure(Component component) {
-        return GsonComponentSerializer.gson().deserializeFromTree(Component.Serializer.toJsonTree(component));
+        return GsonComponentSerializer.gson().deserialize(Component.Serializer.toJson(component, MinecraftServer.getDefaultRegistryAccess()));
     }
 }

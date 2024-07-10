@@ -1,12 +1,14 @@
+import io.papermc.paperweight.userdev.ReobfArtifactConfiguration
+
 plugins {
     id 'java'
-    id 'io.papermc.paperweight.userdev' version '+'
-    id 'xyz.jpenilla.run-paper' version '+'
-    id 'com.github.johnrengelman.shadow' version '7.1.0'
+    id 'io.papermc.paperweight.userdev' version '1.7.+'
+    id 'xyz.jpenilla.run-paper' version '2.+'
+    id 'com.github.johnrengelman.shadow' version '+'
 }
 
 group = 'com.ryuuta0217'
-version = '3.5.2'
+version = '3.5.3'
 
 repositories {
     mavenCentral()
@@ -15,8 +17,12 @@ repositories {
 }
 
 dependencies {
-    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.20.4-R0.1-SNAPSHOT")
+    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.21-R0.1-SNAPSHOT")
     implementation group: 'org.mozilla', name: 'rhino', version: '+'
+}
+
+paperweight {
+    reobfArtifactConfiguration = ReobfArtifactConfiguration.getMOJANG_PRODUCTION()
 }
 
 processResources {
@@ -39,9 +45,9 @@ jar {
 }
 
 shadowJar {
-    archiveFileName = archiveBaseName.get() + "-" + archiveVersion.get() + "-mojang." + archiveExtension.get()
+    archiveFileName = archiveBaseName.get() + "-" + archiveVersion.get() + "." + archiveExtension.get()
 }
 
 reobfJar {
-    outputJar = layout.buildDirectory.file("libs/${project.name}-${project.version}.jar")
+    outputJar = layout.buildDirectory.file("libs/${project.name}-${project.version}-spigot.jar")
 }

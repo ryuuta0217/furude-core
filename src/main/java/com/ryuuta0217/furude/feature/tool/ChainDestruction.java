@@ -4,6 +4,7 @@ import com.ryuuta0217.furude.FurudeCore;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.commands.TitleCommand;
@@ -81,7 +82,7 @@ public class ChainDestruction implements Listener {
         BlockState state = MinecraftAdapter.blockState(event.getClickedBlock());
         Block block = state.getBlock();
 
-        if (!selectedItem.getItem().isCorrectToolForDrops(state)) return;
+        if (!selectedItem.getItem().isCorrectToolForDrops(selectedItem, state)) return;
         if (ModeSwitcher.getMode(selectedItem) != DiggerToolMode.CHAIN_DESTRUCTION) return; // Only if enabled
 
         if (isValidTarget(MinecraftAdapter.ItemStack.itemStack(selectedItem), block) && !event.getPlayer().isSneaking()) {
@@ -125,8 +126,8 @@ public class ChainDestruction implements Listener {
         Block block = state.getBlock();
         if (!isValidTarget(MinecraftAdapter.ItemStack.itemStack(selectedItem), block)) return; // Not Target
         if (state.is(BlockTags.LOGS) && !(selectedItem.getItem() instanceof AxeItem)) return; // Only Axe can break logs
-        if (state.requiresCorrectToolForDrops() && !selectedItem.getItem().isCorrectToolForDrops(state)) return; // Not Correct Tool
-        if (selectedItem.getItem().getMaxDamage() - selectedItem.getDamageValue() <= 1) return; // No Durability
+        if (state.requiresCorrectToolForDrops() && !selectedItem.getItem().isCorrectToolForDrops(selectedItem, state)) return; // Not Correct Tool
+        if (selectedItem.get(DataComponents.MAX_DAMAGE) - selectedItem.getDamageValue() <= 1) return; // No Durability
         if (!enabled) return; // Finally, Not Enabled
 
         Set<BlockPos> toBreak = new HashSet<>(); // Initialize Set for Break Positions
@@ -135,7 +136,7 @@ public class ChainDestruction implements Listener {
 
         toBreak.forEach(pos -> {
             if (player.getMainHandItem().equals(selectedItem)) {
-                if ((selectedItem.getItem().getMaxDamage() - selectedItem.getDamageValue()) > 1) {
+                if ((selectedItem.get(DataComponents.MAX_DAMAGE) - selectedItem.getDamageValue()) > 1) {
                     ignoreEventPositions.get(player.getUUID()).add(pos);
                     try {
                         player.gameMode.destroyBlock(pos);
@@ -162,10 +163,10 @@ public class ChainDestruction implements Listener {
             return raw != null ? Arrays.stream(raw.split(", ?")).filter(str -> !str.isEmpty() && !str.isBlank()).collect(Collectors.toSet()) : Collections.emptySet();
         }
         return new HashSet<>(DEFAULT_CHAIN_DESTRUCT_TARGETS_STRING).stream()
-                .map(id -> new ResourceLocation(id))
+                .map(id -> ResourceLocation.tryParse(id))
                 .map(loc -> BuiltInRegistries.BLOCK.get(loc))
                 .map(block -> block.defaultBlockState())
-                .filter(state -> MinecraftAdapter.item(stack.getType()).isCorrectToolForDrops(state))
+                .filter(state -> MinecraftAdapter.item(stack.getType()).isCorrectToolForDrops(MinecraftAdapter.ItemStack.itemStack(stack), state))
                 .map(state -> BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString())
                 .collect(Collectors.toUnmodifiableSet()); // Returns only blocks that can be broken by the tool by default.
     }

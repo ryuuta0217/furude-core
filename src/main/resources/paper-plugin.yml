@@ -1,6 +1,7 @@
 name: furude-core
 version: '${version}'
 main: com.ryuuta0217.furude.FurudeCore
+bootstrapper: com.ryuuta0217.furude.FurudeCoreBootstrap
 api-version: '1.20'
 permissions:
   furude.default:

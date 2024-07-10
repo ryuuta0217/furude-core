@@ -52,12 +52,12 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_20_R3.inventory.CraftInventory;
-import org.bukkit.craftbukkit.v1_20_R3.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_20_R3.util.CraftMagicNumbers;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.entity.CraftEntity;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.craftbukkit.inventory.CraftInventory;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.util.CraftMagicNumbers;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.jetbrains.annotations.Contract;
@@ -146,7 +146,7 @@ public class MinecraftAdapter {
     public static net.minecraft.network.chat.ChatType chatType(net.kyori.adventure.chat.ChatType adventure) {
         Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().registry(Registries.CHAT_TYPE).orElse(null);
         if (chatTypes != null) {
-            return chatTypes.get(ResourceLocation.of(adventure.key().asString(), ':'));
+            return chatTypes.get(ResourceLocation.tryBySeparator(adventure.key().asString(), ':'));
         }
         throw new IllegalStateException("Failed to get Minecraft's ChatType registry, early access?");
     }
@@ -180,7 +180,7 @@ public class MinecraftAdapter {
         @Nullable
         public static net.minecraft.world.item.ItemStack json(String json) {
             try {
-                return net.minecraft.world.item.ItemStack.of(TagParser.parseTag(json));
+                return net.minecraft.world.item.ItemStack.parseOptional(MinecraftServer.getDefaultRegistryAccess(), TagParser.parseTag(json));
             } catch (CommandSyntaxException e) {
                 return null;
             }
@@ -188,7 +188,7 @@ public class MinecraftAdapter {
 
         @Nonnull
         public static String json(net.minecraft.world.item.ItemStack itemStack) {
-            return itemStack.save(new CompoundTag()).getAsString();
+            return itemStack.save(MinecraftServer.getDefaultRegistryAccess(), new CompoundTag()).getAsString();
         }
 
         public static net.minecraft.world.item.ItemStack itemStack(org.bukkit.inventory.ItemStack bukkit) {

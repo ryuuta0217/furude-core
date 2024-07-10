@@ -1,17 +1,12 @@
 package com.ryuuta0217.furude;
 
-import com.mojang.brigadier.CommandDispatcher;
 import com.ryuuta0217.furude.chat.KanaConvert;
-import com.ryuuta0217.furude.commands.*;
 import com.ryuuta0217.furude.feature.SharpCommandListener;
-import com.ryuuta0217.furude.feature.SuppressMusicDiscStopsAfterDefinedTimeLimit;
 import com.ryuuta0217.furude.feature.death.DeathPointActionbar;
 import com.ryuuta0217.furude.feature.tool.ChainDestruction;
 import com.ryuuta0217.furude.feature.tool.ModeSwitcher;
 import com.ryuuta0217.furude.feature.tool.RangedMining;
 import com.ryuuta0217.furude.managers.ListenerManager;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.ComposterBlock;
 import org.bukkit.Bukkit;
@@ -26,30 +21,6 @@ public final class FurudeCore extends JavaPlugin {
         long start = System.nanoTime();
         getLogger().info("ふーで鯖のプラグイン、よみこみちゅー！");
         INSTANCE = this;
-
-        getLogger().info("ふーでさば: ローマ字 -> ひらがな変換用のコマンドを登録中...");
-        HiraganaCommand.register(getCommandDispatcher());
-        getLogger().info("ふーでさば: ローマ字 -> ひらがな変換用のコマンドを登録しました！");
-
-        getLogger().info("ふーでさば: 拡張用のコマンドを登録中...");
-        EvaluateCommand.register(getCommandDispatcher());
-        getLogger().info("ふーでさば: 拡張用のコマンドを登録しました！");
-
-        getLogger().info("ふーでさば: 一括破壊用のコマンドを登録中...");
-        ChainDestructionCommand.register(getCommandDispatcher());
-        getLogger().info("ふーでさば: 一括破壊用のコマンドを登録しました！");
-
-        getLogger().info("ふーでさば: 範囲破壊用のコマンドを登録中...");
-        RangedMiningCommand.register(getCommandDispatcher());
-        getLogger().info("ふーでさば: 範囲破壊用のコマンドを登録しました！");
-
-        getLogger().info("ふーでさば: アイテムを頭に被るコマンドを登録中...");
-        HatCommand.register(getCommandDispatcher());
-        getLogger().info("ふーでさば: アイテムを頭に被るコマンドを登録しました！");
-
-        getLogger().info("ふーでさば: サーバー移動コマンドを登録中...");
-        ServerCommand.register(getCommandDispatcher());
-        getLogger().info("ふーでさば: サーバー移動コマンドを登録しました！");
 
         if (!ComposterBlock.COMPOSTABLES.containsKey(Items.ROTTEN_FLESH)) {
             getLogger().info("ふーでさば: 腐肉をコンポスターで処分可能にしています...");
@@ -85,10 +56,6 @@ public final class FurudeCore extends JavaPlugin {
         ListenerManager.registerListener(new RangedMining());
         getLogger().info("ふーでさば: 範囲破壊用のブロック破壊リスナーを登録しました！");
 
-        getLogger().info("ふーでさば: 音楽ディスクの再生時間制限を無視するするリスナーを登録中...");
-        ListenerManager.registerListener(new SuppressMusicDiscStopsAfterDefinedTimeLimit());
-        getLogger().info("ふーでさば: 音楽ディスクの再生時間制限を無視するするリスナーを登録しました！");
-
         getLogger().info("ふーでさば: 統合版向けにシャープでコマンドを実行可能にするチャットリスナーを登録中...");
         ListenerManager.registerListener(new SharpCommandListener());
         getLogger().info("ふーでさば: 統合版向けにシャープでコマンドを実行可能にするチャットリスナーを登録しました！");
@@ -110,9 +77,5 @@ public final class FurudeCore extends JavaPlugin {
 
     public static FurudeCore getInstance() {
         return INSTANCE;
-    }
-
-    public static CommandDispatcher<CommandSourceStack> getCommandDispatcher() {
-        return MinecraftServer.getServer().vanillaCommandDispatcher.getDispatcher();
     }
 }

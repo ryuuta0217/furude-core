@@ -14,6 +14,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.ItemStack;
 import net.unknown.core.util.MinecraftAdapter;
@@ -60,7 +61,7 @@ public class RangedMiningCommand {
                     .appendSpace()
                     .append(net.kyori.adventure.text.Component.text("範囲破壊は既に"))
                     .append(net.kyori.adventure.text.Component.text((enabled ? "有効" : "無効") + "化", enabled ? NamedTextColor.GREEN : NamedTextColor.RED))
-                    .append(net.kyori.adventure.text.Component.text("されています")))), true);
+                    .append(net.kyori.adventure.text.Component.text("されています"))), MinecraftServer.getDefaultRegistryAccess()), true);
             return 1;
         }
 
@@ -70,7 +71,7 @@ public class RangedMiningCommand {
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text("範囲破壊を"))
                 .append(net.kyori.adventure.text.Component.text((enabled ? "有効" : "無効") + "化", enabled ? NamedTextColor.GREEN : NamedTextColor.RED))
-                .append(net.kyori.adventure.text.Component.text("しました")))), true);
+                .append(net.kyori.adventure.text.Component.text("しました"))), MinecraftServer.getDefaultRegistryAccess()), true);
         return 0;
     }
 
@@ -88,7 +89,7 @@ public class RangedMiningCommand {
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text("範囲破壊の範囲は"))
                 .append(net.kyori.adventure.text.Component.text("上下左右方向に" + RangedMining.getRange(mainHandItem) + "ブロック", NamedTextColor.GREEN))
-                .append(net.kyori.adventure.text.Component.text("です")))), true);
+                .append(net.kyori.adventure.text.Component.text("です"))), MinecraftServer.getDefaultRegistryAccess()), true);
 
         return 0;
     }
@@ -108,7 +109,7 @@ public class RangedMiningCommand {
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text("範囲破壊の範囲を"))
                 .append(net.kyori.adventure.text.Component.text("上下左右方向に" + range + "ブロック", NamedTextColor.GREEN))
-                .append(net.kyori.adventure.text.Component.text("に変更しました")))), true);
+                .append(net.kyori.adventure.text.Component.text("に変更しました"))), MinecraftServer.getDefaultRegistryAccess()), true);
         return 0;
     }
 
@@ -126,7 +127,7 @@ public class RangedMiningCommand {
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text("範囲破壊で自分の高さより下にあるブロックを破壊する機能は"))
                 .append(net.kyori.adventure.text.Component.text((RangedMining.isDigUnder(mainHandItem) ? "有効" : "無効") + "化", RangedMining.isDigUnder(mainHandItem) ? NamedTextColor.GREEN : NamedTextColor.RED))
-                .append(net.kyori.adventure.text.Component.text("されています")))), true);
+                .append(net.kyori.adventure.text.Component.text("されています"))), MinecraftServer.getDefaultRegistryAccess()), true);
         return 0;
     }
 
@@ -155,7 +156,7 @@ public class RangedMiningCommand {
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text("範囲破壊で自分の高さより下にあるブロックを破壊する機能を"))
                 .append(net.kyori.adventure.text.Component.text((enabled ? "有効" : "無効") + "化", enabled ? NamedTextColor.GREEN : NamedTextColor.RED))
-                .append(net.kyori.adventure.text.Component.text("しました")))), true);
+                .append(net.kyori.adventure.text.Component.text("しました"))), MinecraftServer.getDefaultRegistryAccess()), true);
         return 0;
     }
 
