@@ -158,7 +158,7 @@ public class ChainDestruction implements Listener {
     }
 
     public static Set<String> getTargetBlocks(org.bukkit.inventory.ItemStack stack) {
-        if (stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING)) {
+        if (stack != null && stack.getItemMeta() != null && stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING)) {
             String raw = stack.getItemMeta().getPersistentDataContainer().get(CHAIN_DESTRUCTION_ADDITIONAL_TARGETS_KEY, PersistentDataType.STRING);
             return raw != null ? Arrays.stream(raw.split(", ?")).filter(str -> !str.isEmpty() && !str.isBlank()).collect(Collectors.toSet()) : Collections.emptySet();
         }
@@ -190,7 +190,7 @@ public class ChainDestruction implements Listener {
     }
 
     public static int getMaxBlocks(org.bukkit.inventory.ItemStack stack) {
-        if (stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_MAX_BLOCKS_KEY, PersistentDataType.INTEGER)) {
+        if (stack != null && stack.getItemMeta() != null && stack.getItemMeta().getPersistentDataContainer().has(CHAIN_DESTRUCTION_MAX_BLOCKS_KEY, PersistentDataType.INTEGER)) {
             return stack.getItemMeta().getPersistentDataContainer().get(CHAIN_DESTRUCTION_MAX_BLOCKS_KEY, PersistentDataType.INTEGER);
         }
         return MinecraftAdapter.ItemStack.itemStack(stack).getItem() instanceof AxeItem ? 256 : 64;
