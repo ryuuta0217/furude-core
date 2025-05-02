@@ -164,7 +164,7 @@ public class ChainDestruction implements Listener {
         }
         return new HashSet<>(DEFAULT_CHAIN_DESTRUCT_TARGETS_STRING).stream()
                 .map(id -> ResourceLocation.tryParse(id))
-                .map(loc -> BuiltInRegistries.BLOCK.get(loc))
+                .map(loc -> BuiltInRegistries.BLOCK.getValue(loc))
                 .map(block -> block.defaultBlockState())
                 .filter(state -> MinecraftAdapter.item(stack.getType()).isCorrectToolForDrops(MinecraftAdapter.ItemStack.itemStack(stack), state))
                 .map(state -> BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString())

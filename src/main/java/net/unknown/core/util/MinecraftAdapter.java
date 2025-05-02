@@ -144,15 +144,15 @@ public class MinecraftAdapter {
     }
 
     public static net.minecraft.network.chat.ChatType chatType(net.kyori.adventure.chat.ChatType adventure) {
-        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().registry(Registries.CHAT_TYPE).orElse(null);
+        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().lookupOrThrow(Registries.CHAT_TYPE);
         if (chatTypes != null) {
-            return chatTypes.get(ResourceLocation.tryBySeparator(adventure.key().asString(), ':'));
+            return chatTypes.getValue(ResourceLocation.tryBySeparator(adventure.key().asString(), ':'));
         }
         throw new IllegalStateException("Failed to get Minecraft's ChatType registry, early access?");
     }
 
     public static net.kyori.adventure.chat.ChatType chatType(@Nonnull net.minecraft.network.chat.ChatType minecraft) {
-        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().registry(Registries.CHAT_TYPE).orElse(null);
+        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().lookupOrThrow(Registries.CHAT_TYPE);
         if (chatTypes != null) {
             ResourceLocation minecraftKey = chatTypes.getKey(minecraft);
             if (minecraftKey != null) {
@@ -164,9 +164,9 @@ public class MinecraftAdapter {
     }
 
     public static net.kyori.adventure.chat.ChatType chatType(ResourceKey<net.minecraft.network.chat.ChatType> minecraft) {
-        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().registry(Registries.CHAT_TYPE).orElse(null);
+        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().lookupOrThrow(Registries.CHAT_TYPE);
         if (chatTypes != null) {
-            ChatType chatType = chatTypes.get(minecraft);
+            ChatType chatType = chatTypes.getValue(minecraft);
             if (chatType != null) {
                 return chatType(chatType);
             }

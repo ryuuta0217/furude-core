@@ -21,10 +21,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.DiggerItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.*;
 import net.unknown.core.util.MinecraftAdapter;
 
 import javax.annotation.Nullable;
@@ -247,7 +244,7 @@ public class ChainDestructionCommand {
         NamedTextColor[] useColors = new NamedTextColor[] { NamedTextColor.GREEN, NamedTextColor.YELLOW, NamedTextColor.LIGHT_PURPLE };
         NamedTextColor nextColor = useColors[0];
         for (String target : chainDestructTargets) {
-            ItemStack item = new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.tryParse(target)));
+            ItemStack item = new ItemStack(BuiltInRegistries.ITEM.getValue(ResourceLocation.tryParse(target)));
             org.bukkit.inventory.ItemStack itemBukkit = MinecraftAdapter.ItemStack.itemStack(item);
             message = message.append(itemBukkit.displayName().style(Style.style(nextColor)).hoverEvent(itemBukkit.asHoverEvent()))
                     .appendSpace();

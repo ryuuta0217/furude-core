@@ -2,13 +2,13 @@ import io.papermc.paperweight.userdev.ReobfArtifactConfiguration
 
 plugins {
     id 'java'
-    id 'io.papermc.paperweight.userdev' version '1.7.+'
+    id 'io.papermc.paperweight.userdev' version '+'
     id 'xyz.jpenilla.run-paper' version '2.+'
     id 'com.github.johnrengelman.shadow' version '+'
 }
 
 group = 'com.ryuuta0217'
-version = '3.5.3'
+version = '3.5.4'
 
 repositories {
     mavenCentral()
@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.21-R0.1-SNAPSHOT")
+    paperweightDevelopmentBundle("io.papermc.paper:dev-bundle:1.21.4-R0.1-SNAPSHOT")
     implementation group: 'org.mozilla', name: 'rhino', version: '+'
 }
 
