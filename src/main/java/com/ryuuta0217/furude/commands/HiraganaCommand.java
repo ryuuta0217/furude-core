@@ -14,7 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 public class HiraganaCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> builder = LiteralArgumentBuilder.literal("hiragana");
-        builder.requires(source -> source.hasPermission(0));
+        builder.requires(CommandSourceStack::isPlayer);
 
         builder.then(Commands.literal("on")
                         .executes(ctx -> setHiraganaMode(ctx, true)))

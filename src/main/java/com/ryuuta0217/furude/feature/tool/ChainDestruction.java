@@ -6,16 +6,14 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.commands.TitleCommand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.AxeItem;
-import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -163,7 +161,7 @@ public class ChainDestruction implements Listener {
             return raw != null ? Arrays.stream(raw.split(", ?")).filter(str -> !str.isEmpty() && !str.isBlank()).collect(Collectors.toSet()) : Collections.emptySet();
         }
         return new HashSet<>(DEFAULT_CHAIN_DESTRUCT_TARGETS_STRING).stream()
-                .map(id -> ResourceLocation.tryParse(id))
+                .map(id -> Identifier.tryParse(id))
                 .map(loc -> BuiltInRegistries.BLOCK.getValue(loc))
                 .map(block -> block.defaultBlockState())
                 .filter(state -> MinecraftAdapter.item(stack.getType()).isCorrectToolForDrops(MinecraftAdapter.ItemStack.itemStack(stack), state))

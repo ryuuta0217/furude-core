@@ -9,6 +9,8 @@ import com.ryuuta0217.furude.managers.EvalManager;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.Permissions;
 import org.bukkit.entity.Player;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.ScriptableObject;
@@ -16,7 +18,7 @@ import org.mozilla.javascript.ScriptableObject;
 public class EvaluateCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> builder = LiteralArgumentBuilder.literal("evaluate");
-        builder.requires(source -> source.hasPermission(4));
+        builder.requires(source -> source.hasPermission(Permissions.COMMANDS_OWNER, "furude.commands.evalute"));
         builder.then(Commands.literal("exec")
                         .then(Commands.argument("code", StringArgumentType.greedyString())
                                 .executes(ctx -> {
@@ -50,7 +52,7 @@ public class EvaluateCommand {
         LiteralCommandNode<CommandSourceStack> originalTree = dispatcher.register(builder);
 
         LiteralArgumentBuilder<CommandSourceStack> aliasBuilder = LiteralArgumentBuilder.literal("eval");
-        aliasBuilder.requires(source -> source.hasPermission(4));
+        aliasBuilder.requires(source -> source.hasPermission(Permissions.COMMANDS_OWNER, "furude.commands.evalute"));
         aliasBuilder.redirect(originalTree);
         dispatcher.register(aliasBuilder);
     }

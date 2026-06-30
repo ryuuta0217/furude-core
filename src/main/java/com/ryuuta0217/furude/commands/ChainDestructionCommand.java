@@ -9,6 +9,7 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.ryuuta0217.furude.feature.tool.ChainDestruction;
 import com.ryuuta0217.furude.feature.tool.DiggerToolMode;
 import com.ryuuta0217.furude.feature.tool.ModeSwitcher;
+import io.papermc.paper.adventure.PaperAdventure;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
@@ -19,8 +20,9 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.item.ItemArgument;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.*;
 import net.unknown.core.util.MinecraftAdapter;
 
@@ -39,7 +41,7 @@ public class ChainDestructionCommand {
         // /<chaindestroction|cd> modify targets remove <target: Item, suggestions: Registered-Items>
         // /<chaindestroction|cd> modify targets list
         LiteralArgumentBuilder<CommandSourceStack> builder = LiteralArgumentBuilder.literal("chaindestruction");
-        builder.requires(source -> source.hasPermission(0));
+        builder.requires(CommandSourceStack::isPlayer);
 
         builder.then(Commands.literal("enable")
                 .executes(ctx -> setChainDestructionStatus(ctx, true)))
@@ -57,7 +59,7 @@ public class ChainDestructionCommand {
                                         .suggests((ctx, suggestionsBuilder) -> {
                                             String input = suggestionsBuilder.getInput().substring(suggestionsBuilder.getStart());
                                             Set<String> chainDestructTargets = ChainDestruction.getTargetBlocks(MinecraftAdapter.ItemStack.itemStack(ctx.getSource().getPlayerOrException().getMainHandItem()));
-                                            Set<ResourceLocation> registeredItems = BuiltInRegistries.ITEM.keySet();
+                                            Set<Identifier> registeredItems = BuiltInRegistries.ITEM.keySet();
                                             registeredItems.stream()
                                                     .filter(id -> !chainDestructTargets.contains(id.toString()))
                                                     .forEach(id -> {
@@ -68,26 +70,26 @@ public class ChainDestructionCommand {
                                                     });
                                             return suggestionsBuilder.buildFuture();
                                         })
-                                        .executes(ctx -> addTarget(ctx, ItemArgument.getItem(ctx, "target").getItem()))))
+                                        .executes(ctx -> addTarget(ctx, ItemArgument.getItem(ctx, "target").item().value()))))
                         .then(Commands.literal("remove")
                                 .then(Commands.argument("target", ItemArgument.item(buildContext))
                                         .suggests((ctx, suggestionsBuilder) -> {
                                             String input = suggestionsBuilder.getInput().substring(suggestionsBuilder.getStart());
                                             ChainDestruction.getTargetBlocks(MinecraftAdapter.ItemStack.itemStack(ctx.getSource().getPlayerOrException().getMainHandItem())).forEach(id -> {
                                                 if (!input.isEmpty() && !input.isBlank() && !id.contains(input)) return;
-                                                Optional<Item> itemOpt = BuiltInRegistries.ITEM.getOptional(ResourceLocation.tryParse(id));
+                                                Optional<Item> itemOpt = BuiltInRegistries.ITEM.getOptional(Identifier.tryParse(id));
                                                 itemOpt.ifPresent(item -> suggestionsBuilder.suggest(id, new ItemStack(item).getDisplayName()));
                                             });
                                             return suggestionsBuilder.buildFuture();
                                         })
-                                        .executes(ctx -> removeTarget(ctx, ItemArgument.getItem(ctx, "target").getItem()))))
+                                        .executes(ctx -> removeTarget(ctx, ItemArgument.getItem(ctx, "target").item().value()))))
                         .then(Commands.literal("list")
                                 .executes(ChainDestructionCommand::listTargets)));
 
         LiteralCommandNode<CommandSourceStack> rootNode = dispatcher.register(builder);
 
         LiteralArgumentBuilder<CommandSourceStack> aliasBuilder = LiteralArgumentBuilder.literal("cd");
-        aliasBuilder.requires(source -> source.hasPermission(0));
+        aliasBuilder.requires(CommandSourceStack::isPlayer);
         aliasBuilder.redirect(rootNode);
         dispatcher.register(aliasBuilder);
     }
@@ -102,20 +104,20 @@ public class ChainDestructionCommand {
         }
 
         if ((enabled && ModeSwitcher.getMode(mainHandItem) == DiggerToolMode.CHAIN_DESTRUCTION) || (!enabled && ModeSwitcher.getMode(mainHandItem) == DiggerToolMode.OFF)) {
-            ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
+            ctx.getSource().sendFailure(PaperAdventure.asVanilla(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                     .append(net.kyori.adventure.text.Component.text("既に"))
                     .append(net.kyori.adventure.text.Component.text((enabled ? "有効" : "無効") + "化", enabled ? NamedTextColor.GREEN : NamedTextColor.RED))
-                    .append(net.kyori.adventure.text.Component.text("されています")))), MinecraftServer.getDefaultRegistryAccess()), true);
+                    .append(net.kyori.adventure.text.Component.text("されています")))), true);
             return 1;
         }
 
         ModeSwitcher.setMode(mainHandItem, enabled ? DiggerToolMode.CHAIN_DESTRUCTION : DiggerToolMode.OFF, null);
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
+        ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                 .append(net.kyori.adventure.text.Component.text("一括破壊を"))
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text((enabled ? "有効" : "無効"), enabled ? NamedTextColor.GREEN : NamedTextColor.RED))
                 .appendSpace()
-                .append(net.kyori.adventure.text.Component.text("化しました")))), MinecraftServer.getDefaultRegistryAccess()), true);
+                .append(net.kyori.adventure.text.Component.text("化しました")))), true);
         return 0;
     }
 
@@ -128,7 +130,7 @@ public class ChainDestructionCommand {
             return 2;
         }
 
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数は " + ChainDestruction.getMaxBlocks(mainHandItemBukkit) + "ブロック に設定されています"))), MinecraftServer.getDefaultRegistryAccess()), true);
+        ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数は " + ChainDestruction.getMaxBlocks(mainHandItemBukkit) + "ブロック に設定されています"))), true);
         return 0;
     }
 
@@ -142,12 +144,12 @@ public class ChainDestructionCommand {
         }
 
         if (ChainDestruction.getMaxBlocks(mainHandItemBukkit) == maxBlocks) {
-            ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数は既に " + maxBlocks + "ブロック に設定されています"))), MinecraftServer.getDefaultRegistryAccess()), true);
+            ctx.getSource().sendFailure(PaperAdventure.asVanilla(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数は既に " + maxBlocks + "ブロック に設定されています"))), true);
             return 1;
         }
 
         ChainDestruction.setMaxBlocks(mainHandItemBukkit, maxBlocks);
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数を " + maxBlocks + "ブロック に設定しました"))), MinecraftServer.getDefaultRegistryAccess()), true);
+        ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊最大ブロック数を " + maxBlocks + "ブロック に設定しました"))), true);
         return 0;
     }
 
@@ -169,10 +171,10 @@ public class ChainDestructionCommand {
         String blockItemKey = BuiltInRegistries.BLOCK.getKey(blockItem.getBlock()).toString();
 
         if (chainDestructTargets.contains(blockItemKey)) {
-            ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
+            ctx.getSource().sendFailure(PaperAdventure.asVanilla(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                     .append(net.kyori.adventure.text.Component.text("既に一括破壊対象に設定されています:"))
                     .appendSpace()
-                    .append(buildDisplayName(MinecraftAdapter.ItemStack.itemStack(new ItemStack(target)), NamedTextColor.RED)))), MinecraftServer.getDefaultRegistryAccess()), true);
+                    .append(buildDisplayName(MinecraftAdapter.ItemStack.itemStack(new ItemStack(target)), NamedTextColor.RED)))), true);
             return 1;
         }
 
@@ -180,10 +182,10 @@ public class ChainDestructionCommand {
         org.bukkit.inventory.ItemStack itemBukkit = MinecraftAdapter.ItemStack.itemStack(item);
 
         ChainDestruction.addTargetBlock(mainHandItemBukkit, blockItem.getBlock());
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
+        ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                 .append(net.kyori.adventure.text.Component.text("一括破壊対象を追加しました:"))
                 .appendSpace()
-                .append(buildDisplayName(itemBukkit, NamedTextColor.GREEN)))), MinecraftServer.getDefaultRegistryAccess()), true);
+                .append(buildDisplayName(itemBukkit, NamedTextColor.GREEN)))), true);
         return 0;
     }
 
@@ -205,10 +207,10 @@ public class ChainDestructionCommand {
         String blockItemKey = BuiltInRegistries.BLOCK.getKey(blockItem.getBlock()).toString();
 
         if (!chainDestructTargets.contains(blockItemKey)) {
-            ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
+            ctx.getSource().sendFailure(PaperAdventure.asVanilla(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                     .append(net.kyori.adventure.text.Component.text("一括破壊の対象ではありません:"))
                     .appendSpace()
-                    .append(buildDisplayName(MinecraftAdapter.ItemStack.itemStack(new ItemStack(target)), NamedTextColor.RED)))), MinecraftServer.getDefaultRegistryAccess()), true);
+                    .append(buildDisplayName(MinecraftAdapter.ItemStack.itemStack(new ItemStack(target)), NamedTextColor.RED)))), true);
             return 1;
         }
 
@@ -216,10 +218,10 @@ public class ChainDestructionCommand {
         org.bukkit.inventory.ItemStack itemBukkit = MinecraftAdapter.ItemStack.itemStack(item);
 
         ChainDestruction.removeTargetBlock(mainHandItemBukkit, blockItem.getBlock());
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
+        ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.empty()
                 .append(net.kyori.adventure.text.Component.text("一括破壊の対象から削除しました:", NamedTextColor.YELLOW))
                 .appendSpace()
-                .append(buildDisplayName(itemBukkit, NamedTextColor.YELLOW)))), MinecraftServer.getDefaultRegistryAccess()), true);
+                .append(buildDisplayName(itemBukkit, NamedTextColor.YELLOW)))), true);
         return 0;
     }
 
@@ -234,7 +236,7 @@ public class ChainDestructionCommand {
 
         Set<String> chainDestructTargets = ChainDestruction.getTargetBlocks(mainHandItemBukkit);
         if (chainDestructTargets.isEmpty()) {
-            ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊対象が登録されていません (おかしい)", NamedTextColor.RED))), MinecraftServer.getDefaultRegistryAccess()), true);
+            ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(buildMessage(mainHandItemBukkit, net.kyori.adventure.text.Component.text("一括破壊対象が登録されていません (おかしい)", NamedTextColor.RED))), true);
             return 1;
         }
 
@@ -244,7 +246,7 @@ public class ChainDestructionCommand {
         NamedTextColor[] useColors = new NamedTextColor[] { NamedTextColor.GREEN, NamedTextColor.YELLOW, NamedTextColor.LIGHT_PURPLE };
         NamedTextColor nextColor = useColors[0];
         for (String target : chainDestructTargets) {
-            ItemStack item = new ItemStack(BuiltInRegistries.ITEM.getValue(ResourceLocation.tryParse(target)));
+            ItemStack item = new ItemStack(BuiltInRegistries.ITEM.getValue(Identifier.tryParse(target)));
             org.bukkit.inventory.ItemStack itemBukkit = MinecraftAdapter.ItemStack.itemStack(item);
             message = message.append(itemBukkit.displayName().style(Style.style(nextColor)).hoverEvent(itemBukkit.asHoverEvent()))
                     .appendSpace();
@@ -252,12 +254,12 @@ public class ChainDestructionCommand {
         }
 
         net.kyori.adventure.text.Component finalMessage = message;
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(finalMessage), MinecraftServer.getDefaultRegistryAccess()), false);
+        ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(finalMessage), false);
         return 0;
     }
 
     private static boolean isValidTool(ItemStack stack) {
-        return stack.getItem() instanceof DiggerItem;
+        return stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.AXES) || stack.is(ItemTags.PICKAXES);
     }
 
     private static net.kyori.adventure.text.Component buildDisplayName(org.bukkit.inventory.ItemStack stack, @Nullable Style style) {
@@ -286,10 +288,10 @@ public class ChainDestructionCommand {
     }
 
     private static Component convertAdventure2Minecraft(net.kyori.adventure.text.Component component) {
-        return Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(component), MinecraftServer.getDefaultRegistryAccess());
+        return PaperAdventure.asVanilla(component);
     }
 
     private static net.kyori.adventure.text.Component convertMinecraft2Adventure(Component component) {
-        return GsonComponentSerializer.gson().deserialize(Component.Serializer.toJson(component, MinecraftServer.getDefaultRegistryAccess()));
+        return PaperAdventure.asAdventure(component);
     }
 }

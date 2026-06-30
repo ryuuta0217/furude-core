@@ -8,21 +8,20 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.ryuuta0217.furude.feature.tool.DiggerToolMode;
 import com.ryuuta0217.furude.feature.tool.ModeSwitcher;
 import com.ryuuta0217.furude.feature.tool.RangedMining;
+import io.papermc.paper.adventure.PaperAdventure;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.item.DiggerItem;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.ItemStack;
 import net.unknown.core.util.MinecraftAdapter;
 
 public class RangedMiningCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> builder = LiteralArgumentBuilder.literal("rangedmining");
-        builder.requires(source -> source.hasPermission(0));
+        builder.requires(CommandSourceStack::isPlayer);
 
         builder.then(Commands.literal("enable")
                         .executes(ctx -> setRangedMiningStatus(ctx, true)))
@@ -40,7 +39,7 @@ public class RangedMiningCommand {
                                         .executes(ctx -> modifyDigUnder(ctx, false)))));
 
         LiteralArgumentBuilder<CommandSourceStack> aliasBuilder = LiteralArgumentBuilder.literal("rm");
-        aliasBuilder.requires(source -> source.hasPermission(0));
+        aliasBuilder.requires(CommandSourceStack::isPlayer);
         aliasBuilder.redirect(dispatcher.register(builder));
 
         dispatcher.register(aliasBuilder);
@@ -56,22 +55,22 @@ public class RangedMiningCommand {
         }
 
         if ((enabled && ModeSwitcher.getMode(mainHandItem) == DiggerToolMode.RANGED_MINING) || (!enabled && ModeSwitcher.getMode(mainHandItem) != DiggerToolMode.RANGED_MINING)) {
-            ctx.getSource().sendFailure(Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(net.kyori.adventure.text.Component.empty()
+            ctx.getSource().sendFailure(PaperAdventure.asVanilla(net.kyori.adventure.text.Component.empty()
                     .append(mainHandItemBukkit.displayName())
                     .appendSpace()
                     .append(net.kyori.adventure.text.Component.text("範囲破壊は既に"))
                     .append(net.kyori.adventure.text.Component.text((enabled ? "有効" : "無効") + "化", enabled ? NamedTextColor.GREEN : NamedTextColor.RED))
-                    .append(net.kyori.adventure.text.Component.text("されています"))), MinecraftServer.getDefaultRegistryAccess()), true);
+                    .append(net.kyori.adventure.text.Component.text("されています"))), true);
             return 1;
         }
 
         ModeSwitcher.setMode(mainHandItem, enabled ? DiggerToolMode.RANGED_MINING : DiggerToolMode.OFF, null);
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(net.kyori.adventure.text.Component.empty()
+        ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(net.kyori.adventure.text.Component.empty()
                 .append(mainHandItemBukkit.displayName())
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text("範囲破壊を"))
                 .append(net.kyori.adventure.text.Component.text((enabled ? "有効" : "無効") + "化", enabled ? NamedTextColor.GREEN : NamedTextColor.RED))
-                .append(net.kyori.adventure.text.Component.text("しました"))), MinecraftServer.getDefaultRegistryAccess()), true);
+                .append(net.kyori.adventure.text.Component.text("しました"))), true);
         return 0;
     }
 
@@ -84,12 +83,12 @@ public class RangedMiningCommand {
             return 2;
         }
 
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(net.kyori.adventure.text.Component.empty()
+        ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(net.kyori.adventure.text.Component.empty()
                 .append(mainHandItemBukkit.displayName())
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text("範囲破壊の範囲は"))
                 .append(net.kyori.adventure.text.Component.text("上下左右方向に" + RangedMining.getRange(mainHandItem) + "ブロック", NamedTextColor.GREEN))
-                .append(net.kyori.adventure.text.Component.text("です"))), MinecraftServer.getDefaultRegistryAccess()), true);
+                .append(net.kyori.adventure.text.Component.text("です"))), true);
 
         return 0;
     }
@@ -104,12 +103,12 @@ public class RangedMiningCommand {
         }
 
         RangedMining.setRange(mainHandItem, range);
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(net.kyori.adventure.text.Component.empty()
+        ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(net.kyori.adventure.text.Component.empty()
                 .append(mainHandItemBukkit.displayName())
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text("範囲破壊の範囲を"))
                 .append(net.kyori.adventure.text.Component.text("上下左右方向に" + range + "ブロック", NamedTextColor.GREEN))
-                .append(net.kyori.adventure.text.Component.text("に変更しました"))), MinecraftServer.getDefaultRegistryAccess()), true);
+                .append(net.kyori.adventure.text.Component.text("に変更しました"))), true);
         return 0;
     }
 
@@ -122,12 +121,12 @@ public class RangedMiningCommand {
             return 2;
         }
 
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(net.kyori.adventure.text.Component.empty()
+        ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(net.kyori.adventure.text.Component.empty()
                 .append(mainHandItemBukkit.displayName())
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text("範囲破壊で自分の高さより下にあるブロックを破壊する機能は"))
                 .append(net.kyori.adventure.text.Component.text((RangedMining.isDigUnder(mainHandItem) ? "有効" : "無効") + "化", RangedMining.isDigUnder(mainHandItem) ? NamedTextColor.GREEN : NamedTextColor.RED))
-                .append(net.kyori.adventure.text.Component.text("されています"))), MinecraftServer.getDefaultRegistryAccess()), true);
+                .append(net.kyori.adventure.text.Component.text("されています"))), true);
         return 0;
     }
 
@@ -151,16 +150,16 @@ public class RangedMiningCommand {
         }
 
         RangedMining.setDigUnder(mainHandItem, enabled);
-        ctx.getSource().sendSuccess(() -> Component.Serializer.fromJson(GsonComponentSerializer.gson().serializeToTree(net.kyori.adventure.text.Component.empty()
+        ctx.getSource().sendSuccess(() -> PaperAdventure.asVanilla(net.kyori.adventure.text.Component.empty()
                 .append(mainHandItemBukkit.displayName())
                 .appendSpace()
                 .append(net.kyori.adventure.text.Component.text("範囲破壊で自分の高さより下にあるブロックを破壊する機能を"))
                 .append(net.kyori.adventure.text.Component.text((enabled ? "有効" : "無効") + "化", enabled ? NamedTextColor.GREEN : NamedTextColor.RED))
-                .append(net.kyori.adventure.text.Component.text("しました"))), MinecraftServer.getDefaultRegistryAccess()), true);
+                .append(net.kyori.adventure.text.Component.text("しました"))), true);
         return 0;
     }
 
     private static boolean isValidTool(ItemStack stack) {
-        return stack.getItem() instanceof DiggerItem;
+        return stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.AXES) || stack.is(ItemTags.PICKAXES);
     }
 }

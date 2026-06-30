@@ -3,7 +3,7 @@ package com.ryuuta0217.furude.feature.tool;
 import com.ryuuta0217.furude.FurudeCore;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.minecraft.world.item.DiggerItem;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.ItemStack;
 import net.unknown.core.util.MinecraftAdapter;
 import org.bukkit.NamespacedKey;
@@ -30,7 +30,7 @@ public class ModeSwitcher implements Listener {
         if (selectedBukkitItem == null) return;
 
         ItemStack selectedItem = MinecraftAdapter.ItemStack.itemStack(selectedBukkitItem);
-        if (selectedItem == null || (!(selectedItem.getItem() instanceof DiggerItem))) return;
+        if (selectedItem == null || !isValidTool(selectedItem)) return;
 
         DiggerToolMode currentMode = getMode(selectedItem);
         DiggerToolMode previousMode = DiggerToolMode.values()[(currentMode.ordinal() + DiggerToolMode.values().length - 1) % DiggerToolMode.values().length];
@@ -58,5 +58,9 @@ public class ModeSwitcher implements Listener {
         if (stack == null || stack.getItemMeta() == null) return;
         stack.editMeta(meta -> meta.getPersistentDataContainer().set(TOOL_MODE_KEY, PersistentDataType.STRING, mode.name()));
         if (executor != null) executor.sendActionBar(Component.empty().append(stack.displayName()).appendSpace().append(Component.text("モードを切り替えました: " + mode.getDisplayName(), NamedTextColor.GREEN)));
+    }
+
+    private static boolean isValidTool(ItemStack stack) {
+        return stack.is(ItemTags.SHOVELS) || stack.is(ItemTags.AXES) || stack.is(ItemTags.PICKAXES);
     }
 }

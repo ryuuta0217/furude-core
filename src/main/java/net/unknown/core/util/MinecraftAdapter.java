@@ -31,19 +31,36 @@
 
 package net.unknown.core.util;
 
+import ca.spottedleaf.dataconverter.minecraft.MCDataConverter;
+import ca.spottedleaf.dataconverter.minecraft.MCVersions;
+import ca.spottedleaf.dataconverter.minecraft.datatypes.MCDataType;
+import ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.datafixers.DataFix;
+import com.mojang.serialization.Dynamic;
+import com.mojang.serialization.JsonOps;
 import net.kyori.adventure.chat.SignedMessage;
 import net.kyori.adventure.key.Key;
+import net.minecraft.commands.arguments.item.ItemArgument;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.ChatType;
 import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.datafix.DataFixers;
+import net.minecraft.util.datafix.fixes.References;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
@@ -65,6 +82,7 @@ import org.jetbrains.annotations.Contract;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.Optional;
 
 @ParametersAreNonnullByDefault
 public class MinecraftAdapter {
@@ -100,8 +118,8 @@ public class MinecraftAdapter {
         return new Location(level.getWorld(), coordinates.x(), coordinates.y(), coordinates.z(), rotation.y, rotation.x);
     }
 
-    @Nullable
-    public static net.minecraft.server.level.ServerPlayer player(Player bukkit) {
+    @Contract("null -> null")
+    public static net.minecraft.server.level.ServerPlayer player(@Nullable Player bukkit) {
         if (bukkit instanceof CraftPlayer craft) {
             if (craft.getHandle() != null) return craft.getHandle();
         }
@@ -144,17 +162,17 @@ public class MinecraftAdapter {
     }
 
     public static net.minecraft.network.chat.ChatType chatType(net.kyori.adventure.chat.ChatType adventure) {
-        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().lookupOrThrow(Registries.CHAT_TYPE);
+        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().lookup(Registries.CHAT_TYPE).orElse(null);
         if (chatTypes != null) {
-            return chatTypes.getValue(ResourceLocation.tryBySeparator(adventure.key().asString(), ':'));
+            return chatTypes.get(Identifier.tryBySeparator(adventure.key().asString(), ':')).map(Holder.Reference::value).orElse(null);
         }
         throw new IllegalStateException("Failed to get Minecraft's ChatType registry, early access?");
     }
 
     public static net.kyori.adventure.chat.ChatType chatType(@Nonnull net.minecraft.network.chat.ChatType minecraft) {
-        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().lookupOrThrow(Registries.CHAT_TYPE);
+        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().lookup(Registries.CHAT_TYPE).orElse(null);
         if (chatTypes != null) {
-            ResourceLocation minecraftKey = chatTypes.getKey(minecraft);
+            Identifier minecraftKey = chatTypes.getKey(minecraft);
             if (minecraftKey != null) {
                 return net.kyori.adventure.chat.ChatType.chatType(Key.key(minecraftKey.toString()));
             }
@@ -164,9 +182,9 @@ public class MinecraftAdapter {
     }
 
     public static net.kyori.adventure.chat.ChatType chatType(ResourceKey<net.minecraft.network.chat.ChatType> minecraft) {
-        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().lookupOrThrow(Registries.CHAT_TYPE);
+        Registry<ChatType> chatTypes = MinecraftServer.getServer().registryAccess().lookup(Registries.CHAT_TYPE).orElse(null);
         if (chatTypes != null) {
-            ChatType chatType = chatTypes.getValue(minecraft);
+            ChatType chatType = chatTypes.get(minecraft).map(Holder.Reference::value).orElse(null);
             if (chatType != null) {
                 return chatType(chatType);
             }
@@ -179,16 +197,25 @@ public class MinecraftAdapter {
     public static class ItemStack {
         @Nullable
         public static net.minecraft.world.item.ItemStack json(String json) {
-            try {
-                return net.minecraft.world.item.ItemStack.parseOptional(MinecraftServer.getDefaultRegistryAccess(), TagParser.parseTag(json));
-            } catch (CommandSyntaxException e) {
-                return null;
-            }
+            return net.minecraft.world.item.ItemStack.CODEC.decode(MinecraftServer.getServer().registryAccess().createSerializationContext(JsonOps.INSTANCE), DataFixers.getDataFixer().update(References.ITEM_STACK, new Dynamic<>(MinecraftServer.getServer().registryAccess().createSerializationContext(JsonOps.INSTANCE), JsonParser.parseString(json)), MCVersions.V1_21_4, MCVersions.V1_21_10).getValue()).getOrThrow().getFirst();
         }
 
         @Nonnull
         public static String json(net.minecraft.world.item.ItemStack itemStack) {
-            return itemStack.save(MinecraftServer.getDefaultRegistryAccess(), new CompoundTag()).getAsString();
+            return net.minecraft.world.item.ItemStack.CODEC.encodeStart(MinecraftServer.getServer().registryAccess().createSerializationContext(JsonOps.INSTANCE), itemStack).getOrThrow().toString();
+        }
+
+        public static String json(org.bukkit.inventory.ItemStack bukkit) {
+            return json(itemStack(bukkit));
+        }
+
+        public static net.minecraft.world.item.ItemStack tag(Tag tag) {
+            tag = DataFixers.getDataFixer().update(References.ITEM_STACK, new Dynamic<>(MinecraftServer.getServer().registryAccess().createSerializationContext(NbtOps.INSTANCE), tag), MCVersions.V1_21_4, MCVersions.V1_21_10).getValue();
+            return net.minecraft.world.item.ItemStack.CODEC.parse(MinecraftServer.getServer().registryAccess().createSerializationContext(NbtOps.INSTANCE), tag).getOrThrow();
+        }
+
+        public static Tag tag(net.minecraft.world.item.ItemStack itemStack) {
+            return net.minecraft.world.item.ItemStack.CODEC.encodeStart(MinecraftServer.getServer().registryAccess().createSerializationContext(NbtOps.INSTANCE), itemStack).getOrThrow();
         }
 
         public static net.minecraft.world.item.ItemStack itemStack(org.bukkit.inventory.ItemStack bukkit) {
